@@ -21,7 +21,7 @@ public:
 
 enum gameRound {ErrorRound = -1, Start, PreFlop, Flop, Turn, River, End};
 class game {
-private:
+public:
 	static const int maxNumOfPlayers = 8;			//最多多少人
 	static const int maxNumOfCommonCards = 5;
 	static const int smallBind = 1;
@@ -48,7 +48,7 @@ private:
 						{ 1,3,4,5,6 },
 						{ 2,3,4,5,6 }
 						};
-
+private:
 	string m_gameID;				//游戏ID
 	vector<player> m_players;		//游戏中的玩家
 	vector<card> m_commonCards;		//公共牌
@@ -165,9 +165,10 @@ public:
 	void nowPlayerFold();
 
 	void afterPlayerAction();
-	void renderGame();		//渲染当前游戏状态
-	void nextRound();		//进行下一轮
-	bool nowPlayerRender();	//渲染当前玩家的行动界面
+	void nextRound();				//进行下一轮
+
+	virtual void renderGame();		//渲染当前游戏状态，可能需要重载
+	virtual bool nowPlayerRender();	//渲染当前玩家的行动界面，可能需要重载
 
 	void settle();			//结算,只剩一人或河牌以后计算
 	void calCardTypeAndPointForAll();							//为所有在场的人计算牌型牌点

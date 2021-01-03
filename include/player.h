@@ -3,8 +3,10 @@
 
 enum playerType { Empty = -1, Looker, OnSitePlayer };
 class player {
-private:
+public:
 	static const int numOfHandCards = 2;
+
+private:
 
 	//bool m_isRealPlayer;				//是否是真的玩家，考虑用game中玩家数组空指针代替
 	playerType m_playerType;			//玩家类型，空，旁观者（无筹码），在桌上的玩家，
