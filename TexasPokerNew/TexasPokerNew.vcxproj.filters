@@ -27,9 +27,6 @@
     <QtRcc Include="TexasPokerNew.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <QtUic Include="TexasPokerNew.ui">
-      <Filter>Resource Files</Filter>
-    </QtUic>
     <QtMoc Include="TexasPokerNew.h">
       <Filter>Header Files</Filter>
     </QtMoc>
@@ -59,6 +56,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\TexasPokerSingleUi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
-#include "ui_TexasPokerNew.h"
+//#include "ui_TexasPokerNew.h"
+#include "TexasPokerSingleUi.h"
 
 class TexasPokerNew : public QMainWindow
 {

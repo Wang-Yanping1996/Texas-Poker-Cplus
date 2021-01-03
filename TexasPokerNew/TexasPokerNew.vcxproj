@@ -90,7 +90,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <QtRcc Include="TexasPokerNew.qrc" />
-    <QtUic Include="TexasPokerNew.ui" />
     <QtMoc Include="TexasPokerNew.h" />
     <ClCompile Include="..\src\cardHeap.cpp" />
     <ClCompile Include="..\src\game.cpp" />
@@ -102,6 +101,7 @@
     <ClInclude Include="..\include\cardHeap.h" />
     <ClInclude Include="..\include\game.h" />
     <ClInclude Include="..\include\player.h" />
+    <ClInclude Include="..\include\TexasPokerSingleUi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
