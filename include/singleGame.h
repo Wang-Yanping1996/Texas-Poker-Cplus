@@ -1,6 +1,7 @@
+#pragma once
 #include "game.h"
-#include "ui_TexasPokerNew.h"
-
+//#include "ui_TexasPokerNew.h"
+#include "TexasPokerSingleUi.h"
 
 class singleGame : public game {
 private:

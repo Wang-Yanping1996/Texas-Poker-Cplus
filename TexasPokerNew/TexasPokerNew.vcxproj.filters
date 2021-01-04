@@ -47,6 +47,12 @@
     <ClCompile Include="..\src\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\include\singleGame.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\singleGame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\cardHeap.h">
