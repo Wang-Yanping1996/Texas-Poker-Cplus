@@ -1,11 +1,9 @@
 #include "TexasPokerNew.h"
-#include "singleGame.h"
 #include <QtWidgets/QApplication>
 
 int main(int argc, char *argv[])
 {
 	QApplication a(argc, argv);
-    TexasPokerNew w;	
 	
 	vector<player> playerArray;
 	for (int i = 0; i < 8; ++i) {
@@ -15,12 +13,15 @@ int main(int argc, char *argv[])
 		playerArray.push_back(newPlayer);
 	}
 
-	singleGame myGame = singleGame("game1", playerArray, {}, 0, {}, 0, cardHeap(), ErrorRound, -1, -1, rand() % game::maxNumOfPlayers, {}, nullptr);
+	game myGame = game("game1", playerArray, {}, 0, {}, 0, cardHeap(), ErrorRound, -1, -1, rand() % game::maxNumOfPlayers, {}, nullptr);
 	//game myG("game1", playerArray);
-	//Ui_singleGameWindow *singleGameWindow = new Ui_singleGameWindow(w.getUi().centralWidget);
-	//myGame.setGameWindow(singleGameWindow);
+	TexasPokerNew w;
+	w.setGame(&myGame);
+	Ui_singleGameWindow *singleGameWindow = new Ui_singleGameWindow(w.getUi().centralWidget);
+	myGame.setVirUIPoint(singleGameWindow);
 
-    
+	myGame.begin();
+
     w.show();
     return a.exec();
 }

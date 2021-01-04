@@ -155,10 +155,6 @@ void game::afterPlayerAction(){									//玩家行动后
 		this->nowPlayerRender();															//渲染下一位玩家的界面
 	}
 }
-//void game::hideNowPlayerAction()
-//{
-//}
-
 
 void game::calCardTypeAndPointForAll() {
 	for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
@@ -203,6 +199,7 @@ void game::nextRound() {
 		this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);
 		this->getPlayer(this->m_nowPlayerIndex).add(bigBind);			//大盲
 		this->m_endPlayerIndex = this->m_nowPlayerIndex;				//第一轮到大盲结束 !!!!!有没有问题？
+		this->m_minBet = bigBind;
 		this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//大盲下一位开始
 	}
 	this->renderGame();				//因为新发牌了，所以要重新渲染
@@ -210,32 +207,150 @@ void game::nextRound() {
 	return;
 }
 
-void game::renderGame()
-{
+//void game::renderGame()
+//{
+//}
+//
+//void game::nowPlayerActionComplete()
+//{
+//}
+//
+//void game::finishThisRound()
+//{
+//}
+//bool game::nowPlayerRender() {
+//	//当前玩家已经allin，则什么都不做（不进行渲染），直接当做行动完毕
+//	if (this->m_players[this->m_nowPlayerIndex].hasAllin()) {
+//		this->afterPlayerAction();
+//		return true;
+//	}
+//	//因为暂时是单机测试，所以这里就是渲染出当前player的按键
+//	{
+//
+//	}
+//	//后续用server的话就是这里
+//	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
+//	//nowPlayer.enableOperation();	//client界面显示按键
+//	return true;
+//}
+
+void game::renderGame() {
+	//首先渲染桌子
+	{
+		vector<card> const& commonCards = this->getCommonCards();	//公共牌
+		this->m_ui->showCommonCards(commonCards);
+		this->m_ui->showRound(this->getGameRound());	//轮次
+																	//if (commonCards[0].isCardVailid() && commonCards[1].isCardVailid() && commonCards[2].isCardVailid()) {	//翻牌
+																	//}
+	}
+	//每位玩家
+	{
+		for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
+			player const& curPlayer = this->getPlayer(i_player);
+			if (curPlayer.getPlayerType() == playerType::OnSitePlayer) {	//场上玩家名字筹码和牌都显示
+				this->m_ui->hidePlayerAction(i_player);
+				this->m_ui->hidePlayerActionMessage(i_player);
+				this->m_ui->showPlayerNameCardsChip(i_player, curPlayer);
+			}
+			else if (curPlayer.getPlayerType() == playerType::Looker) {		//旁观者只显示名字和筹码
+				this->m_ui->hidePlayerAction(i_player);
+				this->m_ui->hidePlayerActionMessage(i_player);
+				this->m_ui->hidePlayerHandCards(i_player);
+				this->m_ui->showPlayerName(i_player, curPlayer.getName());
+				this->m_ui->showPlayerChip(i_player, curPlayer.getChip());
+			}
+			else if (curPlayer.getPlayerType() == playerType::Empty) {		//无人则隐藏
+				this->m_ui->hidePlayer(i_player);
+			}
+			else {}
+		}
+	}
 }
 
-void game::nowPlayerActionComplete()
-{
+void game::hideNowPlayerAction() {
+	const int nowPlayerIndex = this->getNowPlayerIndex();
+	this->m_ui->hidePlayerAction(nowPlayerIndex);
 }
 
-void game::finishThisRound()
-{
+void game::showNowPlayerActionMessage(string const& actionMessage) {
+	this->m_ui->showPlayerActionMessage(this->getNowPlayerIndex(), actionMessage);
 }
+
+void game::nowPlayerActionComplete() {
+	this->hideNowPlayerAction();		//隐藏当前玩家行动界面
+										//当前玩家行动信息
+	const int nowPlayerIndex = this->getNowPlayerIndex();
+	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
+	if (nowPlayer.getPlayerAction() == actionType::Nothing) {
+		this->m_ui->hidePlayerActionMessage(nowPlayerIndex);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Allin) {
+		const int allinMoney = nowPlayer.getNowBet();
+		string actionMessage = "allin";
+		if (allinMoney > 0)
+			actionMessage += ":" + to_string(allinMoney);
+		this->showNowPlayerActionMessage(actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Call) {
+		const int callMoney = nowPlayer.getNowBet();
+		string actionMessage = "跟注：" + to_string(callMoney);
+		this->showNowPlayerActionMessage(actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Check) {
+		string actionMessage = "看牌";
+		this->showNowPlayerActionMessage(actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Raise) {
+		const int raiseMoney = nowPlayer.getNowBet();
+		string actionMessage = "加注至：" + to_string(raiseMoney);
+		this->showNowPlayerActionMessage(actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Fold) {
+		string actionMessage = "弃牌";
+		this->showNowPlayerActionMessage(actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::ErrorAction) {
+
+	}
+	else {}
+}
+
+void game::finishThisRound() {
+	for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
+		player& curPlayer = this->getPlayer(i_player);
+		if (curPlayer.getPlayerType() == playerType::OnSitePlayer) {
+			this->m_ui->hidePlayerActionMessage(i_player);
+			if (curPlayer.getPlayerAction() != actionType::Allin) {		//对于非allin的玩家，设定行动为什么也没做，待下轮行动
+				curPlayer.setPlayerAction(actionType::Nothing);
+			}
+		}
+	}
+}
+
 bool game::nowPlayerRender() {
-	//当前玩家已经allin，则什么都不做（不进行渲染），直接当做行动完毕
-	if (this->m_players[this->m_nowPlayerIndex].hasAllin()) {
+	const int nowPlayerIndex = this->getNowPlayerIndex();
+	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
+	if (nowPlayer.hasAllin()) {
 		this->afterPlayerAction();
 		return true;
 	}
-	//因为暂时是单机测试，所以这里就是渲染出当前player的按键
-	{
-
+	const int minBet = this->getMinBet();
+	const int playerNowBet = nowPlayer.getNowBet();
+	const int playerChip = nowPlayer.getChip();
+	if (minBet <= playerNowBet) {	//当前下注小于本人已下注
+		this->m_ui->playerCheckRaiseFoldAction(nowPlayerIndex, game::bigBind, playerChip);
 	}
-	//后续用server的话就是这里
-	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
-	//nowPlayer.enableOperation();	//client界面显示按键
+	else if (minBet >= playerChip) {	//需要allin
+		this->m_ui->playerAllinFoldAction(nowPlayerIndex, playerChip);
+	}
+	else if (minBet < playerChip && minBet > playerNowBet) {	//当前最小下注大于已下注
+		this->m_ui->playerCallRaiseFoldAction(nowPlayerIndex, minBet - playerNowBet, minBet + this->game::bigBind, playerChip);
+	}
+	else {}
 	return true;
 }
+
+
 bool game::begin() {
 	this->m_calledPlayersIndex.clear();
 	for (int playerIndex = 0; playerIndex < maxNumOfPlayers; ++playerIndex) {

@@ -41,7 +41,8 @@ public:
 			playerHandCards[i]->setObjectName(QStringLiteral("playerHandCard1"));
 			playerHandCards[i]->setGeometry(QRect(handCardPosition[i][0] + x, handCardPosition[i][1] + y, 70, 100));
 			playerHandCards[i]->setPixmap(QPixmap(QString::fromUtf8("image/0_00.jpg")));
-			//playerHandCards[i]->raise();
+			playerHandCards[i]->raise();
+			playerHandCards[i]->hide();
 		}
 		raise = new QPushButton(centralWidget);
 		raise->setObjectName(QStringLiteral("raise"));
@@ -72,7 +73,7 @@ public:
 
 		playerChip = new QLabel(centralWidget);
 		playerChip->setObjectName(QStringLiteral("chip"));
-		playerChip->setGeometry(QRect(120 + x, 0 + y, 61, 41));
+		playerChip->setGeometry(QRect(120 + x, 0 + y, 86, 41));
 		playerChip->setFont(font1);
 		playerChip->setLayoutDirection(Qt::LeftToRight);
 		playerChip->setAlignment(Qt::AlignCenter);
@@ -84,14 +85,23 @@ public:
 		actionMessage->setLayoutDirection(Qt::LeftToRight);
 		actionMessage->setAlignment(Qt::AlignCenter);
 
-		//raise->raise();
-		//check->raise();
-		//fold->raise();
-		//call->raise();
-		//raiseMoney->raise();
-		//playerName->raise();
-		//playerChip->raise();
-		//actionMessage->raise();
+		raise->raise();
+		check->raise();
+		fold->raise();
+		call->raise();
+		raiseMoney->raise();
+		playerName->raise();
+		playerChip->raise();
+		actionMessage->raise();
+
+		raise->hide();
+		check->hide();
+		fold->hide();
+		call->hide();
+		raiseMoney->hide();
+		playerName->hide();
+		playerChip->hide();
+		actionMessage->hide();
 
 		raise->setText(QApplication::translate("TexasPokerNewClass", "\345\212\240\346\263\250", Q_NULLPTR));
 		check->setText(QApplication::translate("TexasPokerNewClass", "\347\234\213\347\211\214", Q_NULLPTR));
@@ -129,11 +139,13 @@ public:
 	void hideAll()const;
 };
 
-class Ui_singleGameWindow {
+class Ui_singleGameWindow : public virUI {
+
 public:
 	int commonCardsPosition[game::maxNumOfCommonCards][2] = { { 300,260 },{ 390,260 },{ 480,260 },{ 590,260 },{ 700,260 } };
 	int playerPosition[game::maxNumOfPlayers][2] = { { 470,430 },{ 750,430 },{ 940,190 },{ 750,0 },{ 470,0 },{ 170,0 },{ 0,190 },{ 170,430 } };
 
+	game *m_game;
 
 	Ui_playerWindow *players[game::maxNumOfPlayers];
 	QLabel *commonCards[game::maxNumOfCommonCards];
@@ -141,14 +153,19 @@ public:
 	QLabel *turn;
 	QLabel *river;
 	QLabel *pot;
-	Ui_singleGameWindow(QWidget *centralWidget) {
+	QPushButton *begin;
+
+	Ui_singleGameWindow(QWidget *centralWidget, game* g = nullptr) {
+		this->m_game = g;
+
 		for (int i_card = 0; i_card < game::maxNumOfCommonCards; ++i_card) {
 			commonCards[i_card] = new QLabel(centralWidget);
 			commonCards[i_card]->setObjectName(QStringLiteral("playerHandCard1_3"));
 			commonCards[i_card]->setGeometry(QRect(commonCardsPosition[i_card][0], commonCardsPosition[i_card][1], 70, 100));
 			QString cardFileName = getCardFileName(card(Club, Three));
 			commonCards[i_card]->setPixmap(QPixmap(cardFileName));
-			//commonCards[i_card]->raise();
+			commonCards[i_card]->raise();
+			commonCards[i_card]->hide();
 		}
 
 		QFont font;
@@ -164,7 +181,8 @@ public:
 		flop->setTextFormat(Qt::AutoText);
 		flop->setScaledContents(false);
 		flop->setAlignment(Qt::AlignCenter);
-		//flop->raise();
+		flop->raise();
+		flop->hide();
 
 		turn = new QLabel(centralWidget);
 		turn->setObjectName(QStringLiteral("turn"));
@@ -173,7 +191,8 @@ public:
 		turn->setTextFormat(Qt::AutoText);
 		turn->setScaledContents(false);
 		turn->setAlignment(Qt::AlignCenter);
-		//turn->raise();
+		turn->raise();
+		turn->hide();
 
 		river = new QLabel(centralWidget);
 		river->setObjectName(QStringLiteral("river"));
@@ -182,7 +201,8 @@ public:
 		river->setTextFormat(Qt::AutoText);
 		river->setScaledContents(false);
 		river->setAlignment(Qt::AlignCenter);
-		//river->raise();
+		river->raise();
+		river->hide();
 
 		pot = new QLabel(centralWidget);
 		pot->setObjectName(QStringLiteral("底池"));
@@ -191,7 +211,14 @@ public:
 		pot->setTextFormat(Qt::AutoText);
 		pot->setScaledContents(false);
 		pot->setAlignment(Qt::AlignCenter);
-		//pot->raise();
+		pot->raise();
+		pot->hide();
+
+		begin = new QPushButton(centralWidget);
+		begin->setObjectName(QStringLiteral("begin"));
+		begin->setGeometry(QRect(500, 300, 50, 50));
+		begin->raise();
+		begin->show();
 
 		flop->setText(QApplication::translate("QtWidgetsApplication1Class", "\347\277\273\347\211\214", Q_NULLPTR));
 		turn->setText(QApplication::translate("QtWidgetsApplication1Class", "\350\275\254\347\211\214", Q_NULLPTR));
@@ -212,12 +239,17 @@ public:
 
 	//玩家相关
 	//void showPlayerAction(int playerIndex, player const& needShowPlayer)const;
-	void showPlayer(const int playerIndex, player const& needShowPlayer)const;
+	//void showPlayer(const int playerIndex, player const& needShowPlayer)const;
 	void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const;
 	void showPlayerName(const int playerIndex, string const& playerName)const;
 	void showPlayerChip(const int playerIndex, const int chip)const;
 	void showPlayerNameCardsChip(const int playerIndex, player const& needShowPlayer)const;
-	void showPlayerActionMessage(const int playerIndex, QString const& actionMessage)const;
+	void showPlayerActionMessage(const int playerIndex, string const& actionMessage)const;
+
+	void playerCheckRaiseFoldAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney)const;
+	void playerAllinFoldAction(const int nowPlayerIndex, const int allmoney)const;
+	void playerCallRaiseFoldAction(const int nowPlayerIndex, const int callMoney, const int minRaiseMoney, const int maxRaiseMoney)const;
+
 
 	void hidePlayerHandCards(const int playerIndex)const;
 	void hidePlayerName(const int playerIndex)const;
@@ -232,6 +264,8 @@ class Ui_TexasPokerNewClass
 {
 public:
 	Ui_singleGameWindow *table;
+
+	//QPushButton *begin;
 
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;
@@ -257,6 +291,12 @@ public:
 		TexasPokerNewClass->setStatusBar(statusBar);
 
 		//这里添加
+		//begin = new QPushButton(TexasPokerNewClass);
+		//begin->setObjectName(QStringLiteral("begin"));
+		//begin->setGeometry(QRect(500, 300, 50, 50));
+		//begin->raise();
+		//begin->show();
+
 		table = new Ui_singleGameWindow(centralWidget);
 
 		retranslateUi(TexasPokerNewClass);

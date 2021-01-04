@@ -1,8 +1,44 @@
 #pragma once
 #include "cardHeap.h"
 #include "player.h"
+#include <string>
 #include <set>
 #include <map>
+
+enum gameRound { ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End };
+
+//接口类
+class virUI {
+public:
+	virtual void showCommonCards(vector<card> const& commonCards)const = 0;
+	virtual void hideCommonCards()const = 0;
+
+	virtual void showRound(gameRound nowRound)const = 0;
+	virtual void hideRound()const = 0;
+	virtual void showPot(const int potNum)const = 0;
+	virtual void hidePot()const = 0;
+
+	//玩家相关
+	//void showPlayerAction(int playerIndex, player const& needShowPlayer)const;
+	//virtual void showPlayer(const int playerIndex, player const& needShowPlayer)const = 0;
+	virtual void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const = 0;
+	virtual void showPlayerName(const int playerIndex, string const& playerName)const = 0;
+	virtual void showPlayerChip(const int playerIndex, const int chip)const = 0;
+	virtual void showPlayerNameCardsChip(const int playerIndex, player const& needShowPlayer)const = 0;
+	virtual void showPlayerActionMessage(const int playerIndex, string const& actionMessage)const = 0;
+
+	virtual void playerCheckRaiseFoldAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+	virtual void playerAllinFoldAction(const int nowPlayerIndexconst, int allmoney)const = 0;
+	virtual void playerCallRaiseFoldAction(const int nowPlayerIndex, const int callMoney, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+
+	virtual void hidePlayerHandCards(const int playerIndex)const = 0;
+	virtual void hidePlayerName(const int playerIndex)const = 0;
+	virtual void hidePlayerChip(const int playerIndex)const = 0;
+	virtual void hidePlayerNameCardsChip(const int playerIndex)const = 0;
+	virtual void hidePlayerActionMessage(const int playerIndex)const = 0;
+	virtual void hidePlayerAction(const int playerIndex)const = 0;
+	virtual void hidePlayer(const int playerIndex)const = 0;
+};
 
 //边池类
 class sidePot {
@@ -19,7 +55,6 @@ public:
 	void insertParticipate(const int participateIndex) { this->m_sidePotParticipateIndex.push_back(participateIndex); };
 };
 
-enum gameRound {ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End};
 class game {
 public:
 	static const int maxNumOfPlayers = 8;			//最多多少人
@@ -61,6 +96,7 @@ private:
 	int m_endPlayerIndex;			//本轮结束玩家序号
 	int m_dealer;					//dealer是谁
 	set<int> m_calledPlayersIndex;	//没有fold的玩家序号集合
+	virUI* m_ui;
 public:
 	game(string gameID = "No ID",
 		vector<player> players = vector<player>(maxNumOfPlayers),
@@ -73,7 +109,8 @@ public:
 		int nowPlayerIndex = -1,
 		int endPlayerIndex = -1,
 		int dealer = rand()%maxNumOfPlayers,
-		set<int> calledPlayersIndex = {}
+		set<int> calledPlayersIndex = {},
+		virUI* ui = nullptr
 	) :m_gameID(gameID),
 		m_players(players),
 		m_commonCards(commonCards),
@@ -85,7 +122,8 @@ public:
 		m_nowPlayerIndex(nowPlayerIndex),
 		m_endPlayerIndex(endPlayerIndex),
 		m_dealer(dealer),
-		m_calledPlayersIndex(calledPlayersIndex){
+		m_calledPlayersIndex(calledPlayersIndex),
+		m_ui(ui){
 		m_commonCards.reserve(maxNumOfCommonCards);	//保留空间
 		m_sidePots.reserve(maxNumOfPlayers);			//最多玩家数个边池
 	};
@@ -110,6 +148,7 @@ public:
 	int getDealer()const { return this->m_dealer; };
 	set<int>& getCalledPlayersIndex() { return this->m_calledPlayersIndex; };
 	set<int> const& getCalledPlayersIndex()const { return this->m_calledPlayersIndex; };
+	virUI* getVirUIPoint()const { return this->m_ui; };
 
 	void setGameID(string gameID) { this->m_gameID = gameID; };
 
@@ -130,6 +169,7 @@ public:
 	void clearSidePot() { this->m_sidePots.clear(); };
 
 	void setMinBet(int minBet) { this->m_minBet = minBet; };
+	void setVirUIPoint(virUI* ui = nullptr) { this->m_ui = ui; };
 
 	void shuffleCardHeap() { this->m_cardHeap.shuffle(); };
 	void sendCardsToPlayers();
@@ -169,12 +209,20 @@ public:
 	void afterPlayerAction();
 	void nextRound();				//进行下一轮
 
-	virtual void renderGame();			//渲染当前游戏状态，可能需要重载
-	//virtual void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
-	virtual void nowPlayerActionComplete();
-	virtual void finishThisRound();
 	//virtual void renderNowPlayerActionUI() = 0;	//渲染当前玩家的行动界面，可能需要重载
-	virtual bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
+	//virtual void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
+	//virtual void renderGame();			//渲染当前游戏状态，可能需要重载
+	//virtual void nowPlayerActionComplete();
+	//virtual void finishThisRound();
+	//virtual bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
+
+	void renderGame();			//渲染当前游戏状态，可能需要重载
+	void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
+	void showNowPlayerActionMessage(string const& actionMessage);
+	void nowPlayerActionComplete();
+	void finishThisRound();
+	bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
+
 
 	void settle();			//结算,只剩一人或河牌以后计算
 	void calCardTypeAndPointForAll();							//为所有在场的人计算牌型牌点

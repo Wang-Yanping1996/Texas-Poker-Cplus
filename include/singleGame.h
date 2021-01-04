@@ -30,6 +30,6 @@ public:
 	 void showNowPlayerActionMessage(QString const& actionMessage);
 	 void nowPlayerActionComplete();
 	 void finishThisRound();
-	virtual bool nowPlayerRender();
+	 bool nowPlayerRender();
 };
 

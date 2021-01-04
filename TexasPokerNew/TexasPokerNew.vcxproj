@@ -91,11 +91,9 @@
   <ItemGroup>
     <QtRcc Include="TexasPokerNew.qrc" />
     <QtMoc Include="TexasPokerNew.h" />
-    <ClCompile Include="..\include\singleGame.h" />
     <ClCompile Include="..\src\cardHeap.cpp" />
     <ClCompile Include="..\src\game.cpp" />
     <ClCompile Include="..\src\player.cpp" />
-    <ClCompile Include="..\src\singleGame.cpp" />
     <ClCompile Include="..\src\TexasPokerSingleUi.cpp" />
     <ClCompile Include="TexasPokerNew.cpp" />
     <ClCompile Include="main.cpp" />

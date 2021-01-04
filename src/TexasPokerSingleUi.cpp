@@ -8,10 +8,10 @@ QString getCardFileName(card const& c) {
 };
 
 void Ui_singleGameWindow::showCommonCards(vector<card> const & needShowCommonCards) const {
-	for (int i_card = 0; i_card < game::maxNumOfCommonCards && needShowCommonCards[i_card].isCardVailid(); ++i_card) {
+	for (int i_card = 0; i_card < (int)needShowCommonCards.size() && needShowCommonCards[i_card].isCardVailid(); ++i_card) {
 		QString cardFileName = getCardFileName(needShowCommonCards[i_card]);
 		this->commonCards[i_card]->setPixmap(QPixmap(cardFileName));
-		this->commonCards[i_card]->raise();
+		this->commonCards[i_card]->show();
 	}
 }
 
@@ -23,13 +23,13 @@ void Ui_singleGameWindow::hideCommonCards() const {
 
 void Ui_singleGameWindow::showRound(gameRound nowRound) const {
 	if (nowRound == gameRound::Flop) {
-		this->flop->raise();
+		this->flop->show();
 	}
 	else if (nowRound == gameRound::Turn) {
-		this->turn->raise();
+		this->turn->show();
 	}
 	else if (nowRound == gameRound::River) {
-		this->river->raise();
+		this->river->show();
 	}
 	else {
 		this->hideRound();
@@ -45,7 +45,7 @@ void Ui_singleGameWindow::hideRound() const {
 void Ui_singleGameWindow::showPot(const int potNum) const {
 	QString showText = QStringLiteral("底池：") + QString::number(potNum);
 	this->pot->setText(showText);
-	this->pot->raise();
+	this->pot->show();
 }
 
 void Ui_singleGameWindow::hidePot() const {
@@ -71,8 +71,20 @@ void Ui_singleGameWindow::showPlayerNameCardsChip(const int playerIndex, player 
 	this->showPlayerChip(playerIndex, needShowPlayer.getChip());
 }
 
-void Ui_singleGameWindow::showPlayerActionMessage(const int playerIndex, QString const & actionMessage) const {
-	this->players[playerIndex]->showPlayerActionMessage(actionMessage);
+void Ui_singleGameWindow::showPlayerActionMessage(const int playerIndex, string const & actionMessage) const {
+	this->players[playerIndex]->showPlayerActionMessage(QString::fromStdString(actionMessage));
+}
+
+void Ui_singleGameWindow::playerCheckRaiseFoldAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney) const {
+	this->players[nowPlayerIndex]->checkRaiseFoldAction(minRaiseMoney, maxRaiseMoney);
+}
+
+void Ui_singleGameWindow::playerAllinFoldAction(const int nowPlayerIndex, const int allmoney) const {
+	this->players[nowPlayerIndex]->allinFoldAction(allmoney);
+}
+
+void Ui_singleGameWindow::playerCallRaiseFoldAction(const int nowPlayerIndex, const int callMoney, const int minRaiseMoney, const int maxRaiseMoney) const {
+	this->players[nowPlayerIndex]->callRaiseFoldAction(callMoney, minRaiseMoney, maxRaiseMoney);
 }
 
 void Ui_singleGameWindow::hidePlayerHandCards(const int playerIndex) const {
@@ -108,11 +120,11 @@ void Ui_singleGameWindow::hidePlayer(const int playerIndex) const {
 
 
 void Ui_playerWindow::showHandCards(vector<card> const& c) const {
-	for (int i_card = 0; i_card < player::numOfHandCards; ++i_card) {
+	for (int i_card = 0; i_card < (int)c.size(); ++i_card) {
 		if (c[i_card].isCardVailid()) {
 			QString cardFileName = getCardFileName(c[i_card]);
 			this->playerHandCards[i_card]->setPixmap(cardFileName);
-			this->playerHandCards[i_card]->raise();
+			this->playerHandCards[i_card]->show();
 		}
 		else {
 			this->playerHandCards[i_card]->hide();
@@ -130,7 +142,7 @@ void Ui_playerWindow::hideHandCards() const {
 void Ui_playerWindow::showPlayerName(string const& name) const {
 	QString showName = QString::fromStdString(name);
 	this->playerName->setText(showName);
-	this->playerName->raise();
+	this->playerName->show();
 }
 
 void Ui_playerWindow::hidePlayerName() const {
@@ -139,7 +151,7 @@ void Ui_playerWindow::hidePlayerName() const {
 
 void Ui_playerWindow::showPlayerChip(const int chip) const {
 	this->playerChip->setText(QStringLiteral("筹码：") + QString::number(chip));
-	this->playerChip->raise();
+	this->playerChip->show();
 }
 
 void Ui_playerWindow::hidePlayerChip() const {
@@ -148,7 +160,7 @@ void Ui_playerWindow::hidePlayerChip() const {
 
 void Ui_playerWindow::showPlayerActionMessage(QString const & actionMessage) const {
 	this->actionMessage->setText(actionMessage);
-	this->actionMessage->raise();
+	this->actionMessage->show();
 }
 
 void Ui_playerWindow::hidePlayerActionMessage() const {
@@ -156,10 +168,10 @@ void Ui_playerWindow::hidePlayerActionMessage() const {
 }
 
 void Ui_playerWindow::showRaise(const int minRaiseMoney, const int maxRaiseMoney) const {
-	this->raise->raise();		//显示按键
+	this->raise->show();		//显示按键
 	this->raiseMoney->setRange(minRaiseMoney, maxRaiseMoney);	//设置范围
 	this->raiseMoney->setSingleStep(game::smallBind);			//设置最少一次改变多少
-	this->raiseMoney->raise();
+	this->raiseMoney->show();
 }
 
 void Ui_playerWindow::hideRaise() const {
@@ -172,13 +184,13 @@ void Ui_playerWindow::showAllin(const int allMoney) const {
 }
 
 void Ui_playerWindow::showCheck() const {
-	this->check->raise();
+	this->check->show();
 }
 
 void Ui_playerWindow::showCall(const int callMoney) const {
 	QString showText = QStringLiteral("跟注:") + QString::number(callMoney);
 	this->call->setText(showText);
-	this->call->raise();
+	this->call->show();
 }
 
 void Ui_playerWindow::hideCall() const {
@@ -190,7 +202,7 @@ void Ui_playerWindow::hideCheck() const {
 }
 
 void Ui_playerWindow::showFold() const {
-	this->fold->raise();
+	this->fold->show();
 }
 
 void Ui_playerWindow::hideFold() const {
