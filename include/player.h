@@ -2,6 +2,7 @@
 #include "cardHeap.h"
 
 enum playerType { Empty = -1, Looker, OnSitePlayer };
+enum actionType { ErrorAction = -1, Nothing, Allin, Raise, Call, Check, Fold };
 class player {
 public:
 	static const int numOfHandCards = 2;
@@ -14,11 +15,12 @@ private:
 	vector<card> m_handCards;			//手牌
 	int m_chip;							//玩家筹码
 	int m_nowBet;						//现在已下注
-	//int m_sidePot;						//自己的边池
+	//int m_sidePot;					//自己的边池
 	int m_winMoney;						//这局赢了多少
 	string m_IP;						//IP地址
 	cardTypeAndPoint m_cardTypeAndPoint;//牌型和牌点
-	bool m_hasFold;						//是否弃牌
+	//bool m_hasFold;						//是否弃牌
+	actionType m_playerAction;			//player的上一个动作			
 public:
 	player(playerType playerTypeInput = Empty,
 		string name = "not a player",
@@ -29,7 +31,8 @@ public:
 		int winMoney = 0,
 		string IP = " ",
 		cardTypeAndPoint cardTypeAndPoint = cardTypeAndPoint(cardType::ErrorType),
-		bool hasFold = false
+		//bool hasFold = false,
+		actionType playerAction = actionType::ErrorAction
 	) :m_playerType(playerTypeInput),
 		m_name(name),
 		m_handCards(handCards),
@@ -39,7 +42,8 @@ public:
 		m_winMoney(winMoney),
 		m_IP(IP),
 		m_cardTypeAndPoint(cardTypeAndPoint),
-		m_hasFold(hasFold){};
+		//m_hasFold(hasFold)
+		m_playerAction(playerAction){};
 	player(player const& another);
 	player& operator = (player const& another);
 	~player() = default;
@@ -54,9 +58,10 @@ public:
 	int getWinMoney() const { return this->m_winMoney; };
 	string getIP() const { return this->m_IP; };
 	cardTypeAndPoint getCardTypeAndPoint() const { return this->m_cardTypeAndPoint; };
-	bool hasFold() const { return this->m_hasFold; };
-	bool hasAllin()const { return this->m_chip == 0; };
-	bool isAllinThisRound(){ return this->m_chip == 0 && this->m_nowBet > 0; };
+	//bool hasFold() const { return this->m_playerAction == actionType::Fold; };
+	actionType getPlayerAction()const { return this->m_playerAction; };
+	bool hasAllin()const { return this->m_playerAction == actionType::Allin && this->m_chip == 0; };
+	bool isAllinThisRound(){ return this->m_playerAction == actionType::Allin && this->m_chip == 0 && this->m_nowBet > 0; };
 
 	//void setRealPlayer(const bool isRealPlayer) { this->m_isRealPlayer = isRealPlayer; };
 	void setPlayerType(const playerType playerTypeInput) { this->m_playerType = playerTypeInput; };
@@ -70,7 +75,8 @@ public:
 	void addToWinMoney(const int add) { this->m_winMoney += add; };
 	void setIP(string IP) { this->m_IP = IP; };
 	void setCardTypeAndPoint(const cardTypeAndPoint cardTypeAndPoint) { this->m_cardTypeAndPoint = cardTypeAndPoint; };
-	void setFold(bool fold) { this->m_hasFold = fold; };
+	void setFold() { this->setPlayerAction(actionType::Fold); };
+	void setPlayerAction(actionType action) { this->m_playerAction = action; };
 
 	void action();
 	void add(const int addTo);

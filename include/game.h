@@ -19,7 +19,7 @@ public:
 	void insertParticipate(const int participateIndex) { this->m_sidePotParticipateIndex.push_back(participateIndex); };
 };
 
-enum gameRound {ErrorRound = -1, Start, PreFlop, Flop, Turn, River, End};
+enum gameRound {ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End};
 class game {
 public:
 	static const int maxNumOfPlayers = 8;			//最多多少人
@@ -72,7 +72,7 @@ public:
 		gameRound round = ErrorRound,
 		int nowPlayerIndex = -1,
 		int endPlayerIndex = -1,
-		int dealer = -1,
+		int dealer = rand()%maxNumOfPlayers,
 		set<int> calledPlayersIndex = {}
 	) :m_gameID(gameID),
 		m_players(players),
@@ -101,6 +101,8 @@ public:
 	vector<card> const& getCommonCards()const { return this->m_commonCards; };
 	int getPot()const { return this->m_pot; };
 	int getMinBet()const { return this->m_minBet; };
+	gameRound getGameRound()const { return this->m_round; };
+	player const& getNowPlayer()const { return this->m_players[this->getNowPlayerIndex()]; };
 	int getNowPlayerIndex()const { return this->m_nowPlayerIndex; };
 	int getEndPlayerIndex()const { return this->m_endPlayerIndex; };
 	int getRoundBeginPlayerIndex()const;
@@ -167,8 +169,12 @@ public:
 	void afterPlayerAction();
 	void nextRound();				//进行下一轮
 
-	virtual void renderGame();		//渲染当前游戏状态，可能需要重载
-	virtual bool nowPlayerRender();	//渲染当前玩家的行动界面，可能需要重载
+	virtual void renderGame();			//渲染当前游戏状态，可能需要重载
+	//virtual void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
+	virtual void nowPlayerActionComplete();
+	virtual void finishThisRound();
+	//virtual void renderNowPlayerActionUI() = 0;	//渲染当前玩家的行动界面，可能需要重载
+	virtual bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
 
 	void settle();			//结算,只剩一人或河牌以后计算
 	void calCardTypeAndPointForAll();							//为所有在场的人计算牌型牌点

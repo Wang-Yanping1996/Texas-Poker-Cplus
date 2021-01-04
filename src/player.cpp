@@ -1,12 +1,38 @@
 #include "player.h"
 
+player::player(player const & another) {
+	this->m_playerType = another.m_playerType;
+	this->m_name = another.m_name;
+	this->m_handCards = another.m_handCards;
+	this->m_chip = another.m_chip;
+	this->m_nowBet = another.m_nowBet;
+	this->m_winMoney = another.m_winMoney;
+	this->m_IP = another.m_IP;
+	this->m_cardTypeAndPoint = another.m_cardTypeAndPoint;
+	this->m_playerAction = another.m_playerAction;
+}
+
+player & player::operator=(player const & another)
+{
+	this->m_playerType = another.m_playerType;
+	this->m_name = another.m_name;
+	this->m_handCards = another.m_handCards;
+	this->m_chip = another.m_chip;
+	this->m_nowBet = another.m_nowBet;
+	this->m_winMoney = another.m_winMoney;
+	this->m_IP = another.m_IP;
+	this->m_cardTypeAndPoint = another.m_cardTypeAndPoint;
+	this->m_playerAction = another.m_playerAction;
+	return *this;
+}
+
 void player::add(const int addTo){
 	this->m_chip -= addTo - this->m_nowBet;	//需要补上这么多
 	this->m_nowBet = addTo;
 }
 
 void player::fold(){
-	this->m_hasFold = true;
+	this->setFold();
 }
 
 void player::win(){
@@ -28,6 +54,7 @@ void player::initPlayerState(){
 		this->setNowBet(0);
 		this->setWinMoney(0);
 		this->setCardTypeAndPoint(cardTypeAndPoint(cardType::ErrorType));
-		this->setFold(false);
+		this->setPlayerAction(actionType::Nothing);
+		//this->setFold();
 	}
 }

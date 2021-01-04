@@ -10,7 +10,7 @@ class TexasPokerNew : public QMainWindow
 
 public:
     TexasPokerNew(QWidget *parent = Q_NULLPTR);
-
+	Ui::TexasPokerNewClass getUi()const { return this->ui; };
 private:
     Ui::TexasPokerNewClass ui;
 };

@@ -122,6 +122,7 @@ void game::nowPlayerRaise(const int raiseTo) {
 	nowPlayer.add(raiseTo);
 	//更新当前玩家和结束玩家，因为raise了，必然要走一轮，所以不判断是否进入下一轮
 	//this->afterPlayerAction();		//所以本行删掉
+	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
 	this->m_endPlayerIndex = this->m_nowPlayerIndex;				
 	this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//下一位玩家
 	this->nowPlayerRender();															//渲染下一位玩家的界面
@@ -143,7 +144,9 @@ void game::nowPlayerFold() {
 	this->afterPlayerAction();
 }
 void game::afterPlayerAction(){									//玩家行动后
+	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
 	if (this->m_nowPlayerIndex == this->m_endPlayerIndex) {		//本轮结束
+		this->finishThisRound();								//本轮结束相关渲染
 		this->updatePots();										//更新底池与边池
 		this->nextRound();										//下一轮
 	}
@@ -152,25 +155,10 @@ void game::afterPlayerAction(){									//玩家行动后
 		this->nowPlayerRender();															//渲染下一位玩家的界面
 	}
 }
-//渲染相关
-void game::renderGame() {
+//void game::hideNowPlayerAction()
+//{
+//}
 
-}
-bool game::nowPlayerRender() {
-	//当前玩家已经allin，则什么都不做（不进行渲染），直接当做行动完毕
-	if (this->m_players[this->m_nowPlayerIndex].hasAllin()) {
-		this->afterPlayerAction();
-		return true;
-	}
-	//因为暂时是单机测试，所以这里就是渲染出当前player的按键
-	{
-		
-	}
-	//后续用server的话就是这里
-	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
-	//nowPlayer.enableOperation();	//client界面显示按键
-	return true;
-}
 
 void game::calCardTypeAndPointForAll() {
 	for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
@@ -217,10 +205,37 @@ void game::nextRound() {
 		this->m_endPlayerIndex = this->m_nowPlayerIndex;				//第一轮到大盲结束 !!!!!有没有问题？
 		this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//大盲下一位开始
 	}
+	this->renderGame();				//因为新发牌了，所以要重新渲染
 	this->nowPlayerRender();		//渲染当前行动玩家
 	return;
 }
 
+void game::renderGame()
+{
+}
+
+void game::nowPlayerActionComplete()
+{
+}
+
+void game::finishThisRound()
+{
+}
+bool game::nowPlayerRender() {
+	//当前玩家已经allin，则什么都不做（不进行渲染），直接当做行动完毕
+	if (this->m_players[this->m_nowPlayerIndex].hasAllin()) {
+		this->afterPlayerAction();
+		return true;
+	}
+	//因为暂时是单机测试，所以这里就是渲染出当前player的按键
+	{
+
+	}
+	//后续用server的话就是这里
+	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
+	//nowPlayer.enableOperation();	//client界面显示按键
+	return true;
+}
 bool game::begin() {
 	this->m_calledPlayersIndex.clear();
 	for (int playerIndex = 0; playerIndex < maxNumOfPlayers; ++playerIndex) {

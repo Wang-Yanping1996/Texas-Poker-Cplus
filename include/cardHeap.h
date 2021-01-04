@@ -19,6 +19,7 @@ public:
 
 	cardColor getColor() const { return this->m_color; };		//获取颜色
 	cardNumber getNumber() const { return this->m_number; };	//获取数字
+	bool isCardVailid()const { return this->m_color != cardColor::ErrorColor&&this->m_number != cardNumber::ErrorNumber; };
 
 	bool operator == (card const& another) const;				//是否相同，只比较数字
 	bool operator > (card const& another) const;				//比较大小，只比较数字

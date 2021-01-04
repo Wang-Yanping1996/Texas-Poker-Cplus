@@ -96,6 +96,7 @@
     <ClCompile Include="..\src\game.cpp" />
     <ClCompile Include="..\src\player.cpp" />
     <ClCompile Include="..\src\singleGame.cpp" />
+    <ClCompile Include="..\src\TexasPokerSingleUi.cpp" />
     <ClCompile Include="TexasPokerNew.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

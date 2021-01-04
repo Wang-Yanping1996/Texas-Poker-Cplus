@@ -17,7 +17,7 @@ public:
 		gameRound round = ErrorRound,
 		int nowPlayerIndex = -1,
 		int endPlayerIndex = -1,
-		int dealer = -1,
+		int dealer = rand()&maxNumOfPlayers,
 		set<int> calledPlayersIndex = {},
 		Ui_singleGameWindow *singleGameWindow = nullptr
 	) :game(gameID, players, commonCards, pot, sidePots, minBet, cardHeap, round, nowPlayerIndex, endPlayerIndex, dealer, calledPlayersIndex), m_singleGameWindow(singleGameWindow) {};
@@ -25,7 +25,11 @@ public:
 	void setGameWindow(Ui_singleGameWindow *singleGameWindow = nullptr) { this->m_singleGameWindow = singleGameWindow; };
 	Ui_singleGameWindow* getGameWindow()const { return this->m_singleGameWindow; };
 
-	virtual void renderGame();		//渲染当前游戏状态，可能需要重载
+	 void renderGame();		//渲染当前游戏状态，可能需要重载
+	 void hideNowPlayerAction();	
+	 void showNowPlayerActionMessage(QString const& actionMessage);
+	 void nowPlayerActionComplete();
+	 void finishThisRound();
 	virtual bool nowPlayerRender();
 };
 
