@@ -90,19 +90,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <QtRcc Include="TexasPokerNew.qrc" />
-    <QtMoc Include="TexasPokerNew.h" />
     <ClCompile Include="..\src\cardHeap.cpp" />
     <ClCompile Include="..\src\game.cpp" />
     <ClCompile Include="..\src\player.cpp" />
-    <ClCompile Include="..\src\TexasPokerSingleUi.cpp" />
-    <ClCompile Include="TexasPokerNew.cpp" />
+    <ClCompile Include="..\src\singleGameUI.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\cardHeap.h" />
     <ClInclude Include="..\include\game.h" />
     <ClInclude Include="..\include\player.h" />
-    <ClInclude Include="..\include\TexasPokerSingleUi.h" />
+    <ClInclude Include="resource.h" />
+    <QtMoc Include="..\include\singleGameUI.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TexasPokerNew.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="image\tubiao\poker_window_tubiao.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

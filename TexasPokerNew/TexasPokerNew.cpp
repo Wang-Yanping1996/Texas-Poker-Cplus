@@ -11,7 +11,7 @@ TexasPokerNew::TexasPokerNew(QWidget *parent)
 		connect(this->ui.table->players[i]->call, SIGNAL(clicked()), this, SLOT(nowPlayerRaise()));
 	}
 
-	bool flag = connect(this->ui.table->begin, SIGNAL(clicked()), this, SLOT(nowPlayerRaise()));
+	bool flag = connect(this->ui.table->begin, SIGNAL(QPushButton::clicked()), this, SLOT(nowPlayerRaise()));
 }
 
 

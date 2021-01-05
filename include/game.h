@@ -7,37 +7,50 @@
 
 enum gameRound { ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End };
 
-//接口类
+//接口类,包含了UI应该实现的方法，也就是各部件的show和hide
 class virUI {
 public:
 	virtual void showCommonCards(vector<card> const& commonCards)const = 0;
 	virtual void hideCommonCards()const = 0;
-
 	virtual void showRound(gameRound nowRound)const = 0;
 	virtual void hideRound()const = 0;
 	virtual void showPot(const int potNum)const = 0;
 	virtual void hidePot()const = 0;
+	virtual void showBegin()const = 0;
+	virtual void hideBegin()const = 0;
 
 	//玩家相关
-	//void showPlayerAction(int playerIndex, player const& needShowPlayer)const;
-	//virtual void showPlayer(const int playerIndex, player const& needShowPlayer)const = 0;
 	virtual void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const = 0;
 	virtual void showPlayerName(const int playerIndex, string const& playerName)const = 0;
 	virtual void showPlayerChip(const int playerIndex, const int chip)const = 0;
-	virtual void showPlayerNameCardsChip(const int playerIndex, player const& needShowPlayer)const = 0;
 	virtual void showPlayerActionMessage(const int playerIndex, string const& actionMessage)const = 0;
+	virtual void showPlayerSidePot(const int playerIndex, const int money)const = 0;
+	//virtual void showPlayerNameCardsChip(const int playerIndex, player const& needShowPlayer)const = 0;
 
-	virtual void playerCheckRaiseFoldAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
-	virtual void playerAllinFoldAction(const int nowPlayerIndexconst, int allmoney)const = 0;
-	virtual void playerCallRaiseFoldAction(const int nowPlayerIndex, const int callMoney, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+	//virtual void playerCheckRaiseFoldAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+	//virtual void playerAllinFoldAction(const int nowPlayerIndexconst, int allmoney)const = 0;
+	//virtual void playerCallRaiseFoldAction(const int nowPlayerIndex, const int callMoney, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+	virtual void showPlayerRaiseAction(const int nowPlayerIndex, const int minRaiseMoney, const int maxRaiseMoney)const = 0;
+	virtual void showPlayerAllinAction(const int nowPlayerIndex, const int allinMoney)const = 0;	//不知道有没有用，allin可以在game中实现
+	virtual void showPlayerCheckAction(const int nowPlayerIndex)const = 0;
+	virtual void showPlayerCallAction(const int nowPlayerIndex, const int callMoney)const = 0;
+	virtual void showPlayerFoldAction(const int nowPlayerIndex)const = 0;
 
 	virtual void hidePlayerHandCards(const int playerIndex)const = 0;
 	virtual void hidePlayerName(const int playerIndex)const = 0;
 	virtual void hidePlayerChip(const int playerIndex)const = 0;
-	virtual void hidePlayerNameCardsChip(const int playerIndex)const = 0;
 	virtual void hidePlayerActionMessage(const int playerIndex)const = 0;
-	virtual void hidePlayerAction(const int playerIndex)const = 0;
-	virtual void hidePlayer(const int playerIndex)const = 0;
+	virtual void hidePlayerSidePot(const int playerIndex)const = 0;
+
+	//virtual void hidePlayerNameCardsChip(const int playerIndex)const = 0;
+	//virtual void hidePlayerAction(const int playerIndex)const = 0;
+	//virtual void hidePlayer(const int playerIndex)const = 0;
+
+	virtual void hidePlayerRaiseAction(const int nowPlayerIndex)const = 0;
+	virtual void hidePlayerAllinAction(const int nowPlayerIndex)const = 0;							//不知道有没有用
+	virtual void hidePlayerCheckAction(const int nowPlayerIndex)const = 0;
+	virtual void hidePlayerCallAction(const int nowPlayerIndex)const = 0;
+	virtual void hidePlayerFoldAction(const int nowPlayerIndex)const = 0;
 };
 
 //边池类
@@ -129,14 +142,18 @@ public:
 	};
 	~game() = default;
 	
+	//get玩家
 	string getGameID() const { return this->m_gameID; };
 	vector<player> const& getPlayers()const { return this->m_players; };
 	player& getPlayer(int playerIndex) { return this->m_players[playerIndex]; };
 	player const& getPlayer(int playerIndex)const { return this->m_players[playerIndex]; };
 	int getNextCalledPlayerIndex(const int nowPlayerIndex)const;	//输入可以弃牌，输出还没弃牌的，重写过了
-	int getPreCalledPlayerIndex(const int nowPlayerIndex)const;	//输入可以弃牌，输出还没弃牌的，补写
-
+	int getPreCalledPlayerIndex(const int nowPlayerIndex)const;		//输入可以弃牌，输出还没弃牌的，补写
+	//get game
+	int getNumOfPlayers()const;
+	player& getPlayer(string playerID)const;
 	vector<card> const& getCommonCards()const { return this->m_commonCards; };
+	int getNumOfCommonCards()const { return this->m_commonCards.size(); };
 	int getPot()const { return this->m_pot; };
 	int getMinBet()const { return this->m_minBet; };
 	gameRound getGameRound()const { return this->m_round; };
@@ -150,21 +167,16 @@ public:
 	set<int> const& getCalledPlayersIndex()const { return this->m_calledPlayersIndex; };
 	virUI* getVirUIPoint()const { return this->m_ui; };
 
-	void setGameID(string gameID) { this->m_gameID = gameID; };
-
-	bool addPlayer(player const& p);
-	int getNumOfPlayers()const;
-	player& getPlayer(string playerID)const;
-	bool initPlayersState();
-
-	int getNumOfCommonCards()const { return this->m_commonCards.size(); };
-	void clearCommonCards() { this->m_commonCards.clear(); };
 	gameRound updateGameRound();
-
+	bool addPlayer(player const& p);
+	bool initPlayersState();	
 	void addToPot();
+	
+	void setGameID(string gameID) { this->m_gameID = gameID; };
+	void clearCommonCards() { this->m_commonCards.clear(); };
 	void updatePots();		//更新底池与边池
 	void clearPot() { this->m_pot = 0; };
-	int addNewSidePot(const int money) { this->m_sidePots.push_back(sidePot(0)); return (int)this->m_sidePots.size() - 1; };
+	int addNewSidePot(const int money) { this->m_sidePots.push_back(sidePot(money)); return (int)this->m_sidePots.size() - 1; };
 	void addPlayerToLastSidePot(const int sidePotIndex, const int playerAddedIndex) { this->m_sidePots[sidePotIndex].insertParticipate(playerAddedIndex); };
 	void clearSidePot() { this->m_sidePots.clear(); };
 
@@ -179,65 +191,104 @@ public:
 	void updateNowPlayerIndex();
 	void setNowPlayerIndex(const int nowPlayerIndex) { this->m_nowPlayerIndex = nowPlayerIndex; };
 	void setEndPlayerIndex(const int endPlayerIndex) { this->m_endPlayerIndex = endPlayerIndex; };
-	void updateDealer() {
-		int nextDealer = this->getNextCalledPlayerIndex(this->m_dealer);
-		this->m_dealer = nextDealer;	//相等怎么办？要不要判断？
-
-		//似乎没用了后面的
-		//int nextDealerIndex = this->m_dealer;
-		//do {
-		//	nextDealerIndex++;
-		//	if (nextDealerIndex >= maxNumOfPlayers)
-		//		nextDealerIndex -= maxNumOfPlayers;
-		//	if (this->m_players[nextDealerIndex].getPlayerType() == playerType::OnSitePlayer) {	//与getRoundBeginPlayerIndex不同之处在于判别条件，在更新calledPlayer以后应该两者一样
-		//		this->m_dealer = nextDealerIndex;
-		//		return;		//找到了
-		//	}
-		//} while (nextDealerIndex != this->m_dealer);	//一圈了还没找到
-		//this->m_dealer = -1;
-		//return;
-		//this->m_dealer = this->getNextPlayerIndex(this->m_dealer);		//updateDealer之前应该加入了calledPlayer，直接调用这个应该就行，并不行，上局dealer可能不在本局游戏中
-	};
+	void updateDealer() { int nextDealer = this->getNextCalledPlayerIndex(this->m_dealer);	this->m_dealer = nextDealer; };	//相等怎么办？要不要判断？
 
 	void clearCalledPlayersIndex() { this->m_calledPlayersIndex.clear(); };
 
+	//五个必须实现的函数
 	void nowPlayerRaise(const int raiseTo);
+	void nowPlayerAllin();
 	void nowPlayerCall();
 	void nowPlayerCheck();
 	void nowPlayerFold();
 
 	void afterPlayerAction();
+
 	void nextRound();				//进行下一轮
 
-	//virtual void renderNowPlayerActionUI() = 0;	//渲染当前玩家的行动界面，可能需要重载
-	//virtual void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
-	//virtual void renderGame();			//渲染当前游戏状态，可能需要重载
-	//virtual void nowPlayerActionComplete();
-	//virtual void finishThisRound();
-	//virtual bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
-
-	void renderGame();			//渲染当前游戏状态，可能需要重载
-	void hideNowPlayerAction();	//当前玩家行动完毕，关闭其行动界面
-	void showNowPlayerActionMessage(string const& actionMessage);
+	void renderGame();				//渲染当前游戏状态，可能需要重载
+	//void showNowPlayerActionMessage(string const& actionMessage);
 	void nowPlayerActionComplete();
 	void finishThisRound();
-	bool nowPlayerRender();		//渲染当前玩家的行动界面，可能需要重载
+	bool nowPlayerRender();			//渲染当前玩家的行动界面，可能需要重载
 
+	void settle();					//结算,只剩一人或河牌以后计算
+	void calCardTypeAndPointForAll();														//为所有在场的人计算牌型牌点
+	cardTypeAndPoint calCardTypeAndPointForPlayer(const int playerIndex);				//为单一玩家计算牌型牌点
 
-	void settle();			//结算,只剩一人或河牌以后计算
-	void calCardTypeAndPointForAll();							//为所有在场的人计算牌型牌点
-	void calCardTypeAndPointForPlayer(const int playerIndex);	//为单一玩家计算牌型牌点
-
-	void playerWin(int winnerIndex);				//玩家x赢了多少钱
-	void playerLose(int loserIndex);				//玩家x输了
+	void playerWin(int winnerIndex);//玩家x赢了多少钱
+	void playerLose(int loserIndex);//玩家x输了
 	vector<int> getMaxPlayersIndex();										//获取手牌最大玩家的序号
 	vector<int> getMaxPlayersIndex(vector<int> const& curPlayerIndexSet);	//获取输入数组中手牌最大玩家的序号
 
-	//
 	bool begin();					//开始游戏
+
 	//bool playersAction();			//玩家行动
 	//bool playerAction(const int playerIndex);	//玩家N行动
 	//int  isEnd();					//游戏是否结束，只剩一人
+
+	//ui相关
+	//player show
+	void showPlayerChip(const int playerIndex);
+	void showPlayerName(const int playerIndex);
+	void showPlayerHandCards(const int playerIndex);
+	void showPlayerActionMessage(const int playerIndex);
+	void showPlayerSidePot(const int playerIndex, const int money);
+	void showPlayerMessage(const int playerIndex, string const& message);
+	void showPlayerRaiseAction(const int playerIndex);
+	void showPlayerAllinAction(const int playerIndex);		//allin加上了
+	void showPlayerCheckAction(const int playerIndex);
+	void showPlayerCallAction(const int playerIndex);
+	void showPlayerFoldAction(const int playerIndex);	
+	void showNowPlayerChip() { this->showPlayerChip(this->m_nowPlayerIndex); };
+	void showNowPlayerName() { this->showPlayerName(this->m_nowPlayerIndex); };
+	void showNowPlayerHandCards() { this->showPlayerHandCards(this->m_nowPlayerIndex); };
+	void showNowPlayerActionMessage() { this->showPlayerActionMessage(this->m_nowPlayerIndex); };
+	void showNowPlayerRaiseAction() { this->showPlayerRaiseAction(this->m_nowPlayerIndex); };
+	void showNowPlayerCheckAction() { this->showPlayerCheckAction(this->m_nowPlayerIndex); };
+	void showNowPlayerCallAction() { this->showPlayerCallAction(this->m_nowPlayerIndex); };
+	void showNowPlayerFoldAction() { this->showPlayerFoldAction(this->m_nowPlayerIndex); };
+	//player hide
+	void hidePlayerChip(const int playerIndex) { this->m_ui->hidePlayerChip(playerIndex); };
+	void hidePlayerName(const int playerIndex) { this->m_ui->hidePlayerName(playerIndex); };
+	void hidePlayerHandCards(const int playerIndex) { this->m_ui->hidePlayerHandCards(playerIndex); };
+	void hidePlayerActionMessage(const int playerIndex) { this->m_ui->hidePlayerActionMessage(playerIndex); };
+	void hidePlayerSidePot(const int playerIndex) { this->m_ui->hidePlayerSidePot(playerIndex); };
+	void hideAllPlayerSidePot() { for (int i = 0; i < maxNumOfPlayers; ++i) this->m_ui->hidePlayerSidePot(i); };
+	void hidePlayerRaiseAction(const int playerIndex) { this->m_ui->hidePlayerRaiseAction(playerIndex); };
+	void hidePlayerAllinAction(const int playerIndex) { this->m_ui->hidePlayerAllinAction(playerIndex); };
+	void hidePlayerCheckAction(const int playerIndex) { this->m_ui->hidePlayerCheckAction(playerIndex); };
+	void hidePlayerCallAction(const int playerIndex) { this->m_ui->hidePlayerCallAction(playerIndex); };
+	void hidePlayerFoldAction(const int playerIndex) { this->m_ui->hidePlayerFoldAction(playerIndex); };
+	void hideNowPlayerChip() { this->hidePlayerChip(this->m_nowPlayerIndex); };
+	void hideNowPlayerName() { this->hidePlayerName(this->m_nowPlayerIndex); };
+	void hideNowPlayerHandCards() { this->hidePlayerHandCards(this->m_nowPlayerIndex); };
+	void hideNowPlayerActionMessage() { this->hidePlayerActionMessage(this->m_nowPlayerIndex); };
+	void hideNowPlayerRaiseAction() { this->hidePlayerRaiseAction(this->m_nowPlayerIndex); };
+	void hideNowPlayerCheckAction() { this->hidePlayerCheckAction(this->m_nowPlayerIndex); };
+	void hideNowPlayerCallAction() { this->hidePlayerCallAction(this->m_nowPlayerIndex); };
+	void hideNowPlayerFoldAction() { this->hidePlayerFoldAction(this->m_nowPlayerIndex); }; 
+	//player组合行为
+	void showPlayerNameCardsChip(const int playerIndex);
+	void showPlayerCheckRaiseFoldAction(const int playerIndex);
+	void showPlayerAllinFoldAction(const int playerIndex);
+	void showPlayerCallRaiseFoldAction(const int playerIndex);
+
+	void hidePlayerAllAction(const int playerIndex);
+	void hidePlayer(const int playerIndex);
+	void hideNowPlayerAllAction();							//当前玩家行动完毕，关闭其行动界面
+
+	//game相关
+	void showCommonCards() { this->m_ui->showCommonCards(this->m_commonCards); };
+	void showRound() { this->m_ui->showRound(this->m_round); };
+	void showPot() { this->m_ui->showPot(this->m_pot); };
+	void hideCommonCards() { this->m_ui->hideCommonCards(); };
+	void hideRound() { this->m_ui->hideRound(); };
+	void hidePot() { this->m_ui->hidePot(); };
+	void showBegin() { this->m_ui->showBegin(); };
+	void hideBegin() { this->m_ui->hideBegin(); };
+
+	void showGameEnd();
 };
 
 

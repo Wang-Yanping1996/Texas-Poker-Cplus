@@ -27,17 +27,25 @@ player & player::operator=(player const & another)
 }
 
 void player::add(const int addTo){
-	this->m_chip -= addTo - this->m_nowBet;	//需要补上这么多
-	this->m_nowBet = addTo;
+	if (addTo - this->m_nowBet >= this->m_chip) {
+		this->m_nowBet += this->m_chip;			//allin了
+		this->m_chip = 0;
+	}
+	else {
+		this->m_chip -= addTo - this->m_nowBet;	//需要补上这么多
+		this->m_nowBet = addTo;
+	}
+	
 }
 
 void player::fold(){
 	this->setFold();
+	this->setHandCards(vector<card>(numOfHandCards, card(cardColor::ErrorColor, cardNumber::ErrorNumber)));
 }
 
 void player::win(){
 	this->m_chip += this->m_winMoney;
-	this->m_winMoney = 0;
+	//this->m_winMoney = 0;
 	//this->m_sidePot = 0;
 }
 

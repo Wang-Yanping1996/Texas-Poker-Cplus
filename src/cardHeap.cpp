@@ -2,6 +2,33 @@
 #include <time.h>
 #include <algorithm>
 #include <functional>
+
+string to_string(cardType type) {
+	if (type == cardType::HighCard)
+		return "高牌";
+	else if (type == cardType::OnePair)
+		return "一对";
+	else if (type == cardType::TwoPairs)
+		return "两对";
+	else if (type == cardType::ThreeOfKind)
+		return "三条";
+	else if (type == cardType::Straight)
+		return "顺子";
+	else if (type == cardType::Flush)
+		return "同花";
+	else if (type == cardType::FullHouse)
+		return "葫芦";
+	else if (type == cardType::FourOfKind)
+		return "四条";
+	else if (type == cardType::StraightFlush)
+		return "同花顺";
+	else if (type == cardType::RoyalFlush)
+		return "皇家同花顺";
+	else {}
+
+	return "错误";
+};
+
 //card类
 card::card(card const& another) {	//拷贝构造
 	this->m_color = another.m_color;

@@ -54,9 +54,10 @@ int game::getRoundBeginPlayerIndex() const {
 	return this->getNextCalledPlayerIndex(this->m_dealer);	//直接获取dealer下一个
 }
 int game::getRoundEndPlayerIndex() const {
-	//重写了，dealer前一个有效玩家的后一个
-	int preCalledPlayerIndex = this->getPreCalledPlayerIndex(this->m_dealer);
-	return this->getNextCalledPlayerIndex(preCalledPlayerIndex);
+	//重写了，dealer在就是dealer，不在就是前一个有效的
+	if (this->m_calledPlayersIndex.find(this->m_dealer) != this->m_calledPlayersIndex.end())
+		return this->m_dealer;
+	return  this->getPreCalledPlayerIndex(this->m_dealer);
 }
 
 //bool game::playersAction() {			//要不要考虑把m_calledPlayersIndex换成引用或指针的set，感觉更合理一点？
@@ -103,51 +104,82 @@ void game::sendCardsToTable() {
 	if (this->m_round == PreFlop) {	//翻前
 		this->sendCardsToPlayers();
 	}
-	else if (this->m_round == Flop) {	//翻牌
-		this->m_commonCards[0] = this->m_cardHeap.getCard();
-		this->m_commonCards[1] = this->m_cardHeap.getCard();
-		this->m_commonCards[2] = this->m_cardHeap.getCard();
+	else if (this->m_round == Flop) {	//翻牌，发三张
+		//this->m_commonCards[0] = this->m_cardHeap.getCard();
+		//this->m_commonCards[1] = this->m_cardHeap.getCard();
+		//this->m_commonCards[2] = this->m_cardHeap.getCard();
+		this->m_commonCards.push_back(this->m_cardHeap.getCard());
+		this->m_commonCards.push_back(this->m_cardHeap.getCard());
+		this->m_commonCards.push_back(this->m_cardHeap.getCard());
 	}
-	else if (this->m_round == Turn) {	//转牌
-		this->m_commonCards[3] = this->m_cardHeap.getCard();
+	else if (this->m_round == Turn) {	//转牌，发一张
+		//this->m_commonCards[3] = this->m_cardHeap.getCard();
+		this->m_commonCards.push_back(this->m_cardHeap.getCard());
 	}
-	else if (this->m_round == River) {	//河牌
-		this->m_commonCards[4] = this->m_cardHeap.getCard();
+	else if (this->m_round == River) {	//河牌，发一张
+		//this->m_commonCards[4] = this->m_cardHeap.getCard();
+		this->m_commonCards.push_back(this->m_cardHeap.getCard());
 	}
 }
 
 //四个当前玩家的动作，可以将玩家按键全部绑定至此
 void game::nowPlayerRaise(const int raiseTo) {
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
+	if (raiseTo >= nowPlayer.getChip() + nowPlayer.getNowBet()) {	//是否是allin
+		this->nowPlayerAllin();
+		return;
+	}
 	nowPlayer.add(raiseTo);
+	nowPlayer.setPlayerAction(actionType::Raise);
+	this->setMinBet(raiseTo);			//更新现在最小下注
 	//更新当前玩家和结束玩家，因为raise了，必然要走一轮，所以不判断是否进入下一轮
 	//this->afterPlayerAction();		//所以本行删掉
-	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
-	this->m_endPlayerIndex = this->m_nowPlayerIndex;				
-	this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//下一位玩家
-	this->nowPlayerRender();															//渲染下一位玩家的界面
+	//this->nowPlayerActionComplete();	//当前玩家结束行动渲染
+	this->m_endPlayerIndex = this->getPreCalledPlayerIndex(this->m_nowPlayerIndex);
+	this->afterPlayerAction();
+	//this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//下一位玩家
+	//this->nowPlayerRender();															//渲染下一位玩家的界面
+}
+void game::nowPlayerAllin() {
+	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
+	const int remainderChip = nowPlayer.getChip();
+	const int nowBet = nowPlayer.getNowBet();
+	const int allMoney = remainderChip + nowBet;
+	nowPlayer.add(allMoney);			//加注至所有钱
+	nowPlayer.setPlayerAction(actionType::Allin);
+
+	if (this->m_minBet < allMoney) {	//allin后钱多于已下注，需要更新结束玩家
+		this->m_endPlayerIndex = this->getPreCalledPlayerIndex(this->m_nowPlayerIndex);
+		this->setMinBet(allMoney);		//更新现在最小下注
+	}
+	this->afterPlayerAction();
+
 }
 void game::nowPlayerCall() {
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	nowPlayer.add(this->m_minBet);		//就是玩家加到最小bet
+	nowPlayer.setPlayerAction(actionType::Call);
 	this->afterPlayerAction();
 }
 void game::nowPlayerCheck() {
-	//player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
+	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	//nowPlayer.add(0);		//加到0，可以删了
+	nowPlayer.setPlayerAction(actionType::Check);
 	this->afterPlayerAction();
 }
 void game::nowPlayerFold() {
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	nowPlayer.fold();
+	this->hideNowPlayerHandCards();			//隐藏手牌，已在fold中设置为错误
 	this->m_calledPlayersIndex.erase(this->m_nowPlayerIndex);	//从已call集合中删除
+	//nowPlayer.setPlayerAction(actionType::Fold);	//已在player.fold()里
 	this->afterPlayerAction();
 }
 void game::afterPlayerAction(){									//玩家行动后
 	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
-	if (this->m_nowPlayerIndex == this->m_endPlayerIndex) {		//本轮结束
-		this->finishThisRound();								//本轮结束相关渲染
+	if (this->m_nowPlayerIndex == this->m_endPlayerIndex || this->m_calledPlayersIndex.size() <= 1) {		//本轮结束
 		this->updatePots();										//更新底池与边池
+		this->finishThisRound();								//本轮结束相关渲染
 		this->nextRound();										//下一轮
 	}
 	else {
@@ -163,7 +195,7 @@ void game::calCardTypeAndPointForAll() {
 	}
 }
 
-void game::calCardTypeAndPointForPlayer(const int playerIndex) {
+cardTypeAndPoint game::calCardTypeAndPointForPlayer(const int playerIndex) {
 	player& player = this->getPlayer(playerIndex);
 	vector<card> const& handCards = player.getHandCards();
 	vector<card> const& commonCards = this->getCommonCards();
@@ -181,28 +213,35 @@ void game::calCardTypeAndPointForPlayer(const int playerIndex) {
 				player.setCardTypeAndPoint(nowCardTypeAndPoint);
 		}
 	}
+	return player.getCardTypeAndPoint();
 }
 
 
 void game::nextRound() {
-	if (this->m_calledPlayersIndex.size()<=1||this->m_round >= End) {	//没人了或是最后一轮进行完了，结算
+	if (this->m_calledPlayersIndex.size()<=1||this->m_round >= gameRound::River) {	//没人了或是最后一轮进行完了，结算
 		this->settle();
 		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
+		this->showGameEnd();
 		return;
 	}
 	this->m_round = gameRound(this->m_round + 1);
 	this->sendCardsToTable();
 	this->m_nowPlayerIndex = this->getRoundBeginPlayerIndex();			//这一轮开始的玩家，用这个是因为dealer可能弃牌了
 	this->m_endPlayerIndex = this->getRoundEndPlayerIndex();			//这一轮结束的玩家
-	if (this->m_round == PreFlop) {	//翻前下盲注
+	this->renderGame();													//因为新发牌了，所以要重新渲染
+	if (this->m_round == PreFlop) {										//翻前下盲注
 		this->getPlayer(this->m_nowPlayerIndex).add(smallBind);			//小盲
+		this->getPlayer(this->m_nowPlayerIndex).setPlayerAction(actionType::Raise);
+		this->nowPlayerActionComplete();
 		this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);
+
 		this->getPlayer(this->m_nowPlayerIndex).add(bigBind);			//大盲
+		this->getPlayer(this->m_nowPlayerIndex).setPlayerAction(actionType::Raise);
+		this->nowPlayerActionComplete();
 		this->m_endPlayerIndex = this->m_nowPlayerIndex;				//第一轮到大盲结束 !!!!!有没有问题？
 		this->m_minBet = bigBind;
 		this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//大盲下一位开始
 	}
-	this->renderGame();				//因为新发牌了，所以要重新渲染
 	this->nowPlayerRender();		//渲染当前行动玩家
 	return;
 }
@@ -238,88 +277,76 @@ void game::renderGame() {
 	//首先渲染桌子
 	{
 		vector<card> const& commonCards = this->getCommonCards();	//公共牌
-		this->m_ui->showCommonCards(commonCards);
-		this->m_ui->showRound(this->getGameRound());	//轮次
-																	//if (commonCards[0].isCardVailid() && commonCards[1].isCardVailid() && commonCards[2].isCardVailid()) {	//翻牌
-																	//}
+		this->showCommonCards();
+		this->showRound();	//轮次
+		this->showPot();
 	}
 	//每位玩家
 	{
 		for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
 			player const& curPlayer = this->getPlayer(i_player);
 			if (curPlayer.getPlayerType() == playerType::OnSitePlayer) {	//场上玩家名字筹码和牌都显示
-				this->m_ui->hidePlayerAction(i_player);
-				this->m_ui->hidePlayerActionMessage(i_player);
-				this->m_ui->showPlayerNameCardsChip(i_player, curPlayer);
+				this->hidePlayerAllAction(i_player);
+				this->hidePlayerActionMessage(i_player);
+				this->showPlayerNameCardsChip(i_player);
 			}
 			else if (curPlayer.getPlayerType() == playerType::Looker) {		//旁观者只显示名字和筹码
-				this->m_ui->hidePlayerAction(i_player);
-				this->m_ui->hidePlayerActionMessage(i_player);
-				this->m_ui->hidePlayerHandCards(i_player);
-				this->m_ui->showPlayerName(i_player, curPlayer.getName());
-				this->m_ui->showPlayerChip(i_player, curPlayer.getChip());
+				this->hidePlayerAllAction(i_player);
+				this->hidePlayerActionMessage(i_player);
+				this->hidePlayerHandCards(i_player);
+				this->showPlayerName(i_player);
+				this->showPlayerChip(i_player);
 			}
 			else if (curPlayer.getPlayerType() == playerType::Empty) {		//无人则隐藏
-				this->m_ui->hidePlayer(i_player);
+				this->hidePlayer(i_player);
 			}
 			else {}
 		}
 	}
 }
 
-void game::hideNowPlayerAction() {
+void game::hideNowPlayerAllAction() {
 	const int nowPlayerIndex = this->getNowPlayerIndex();
-	this->m_ui->hidePlayerAction(nowPlayerIndex);
+	this->hidePlayerAllAction(nowPlayerIndex);
 }
 
-void game::showNowPlayerActionMessage(string const& actionMessage) {
-	this->m_ui->showPlayerActionMessage(this->getNowPlayerIndex(), actionMessage);
+void game::showGameEnd()
+{
+	//游戏结束
+	//玩家赢得结算
+	for (int i_player : this->m_calledPlayersIndex) {
+		player const& curPlayer = this->getPlayer(i_player);
+		const int winMoney = curPlayer.getWinMoney();
+		string outputMessage = "";
+		if (this->m_calledPlayersIndex.size() > 1) {
+			const cardType cardType = curPlayer.getCardTypeAndPoint().getCardType();
+			outputMessage += "牌型：" + to_string(cardType) + "\n";
+		}
+		if (winMoney > 0) {		//玩家赢了
+			outputMessage += "玩家赢得：" + to_string(winMoney);
+		}
+		else {
+			outputMessage += "玩家输了";
+		}
+		this->showPlayerMessage(i_player, outputMessage);
+	}
+	//开始按键出现
+	this->showBegin();
 }
+
 
 void game::nowPlayerActionComplete() {
-	this->hideNowPlayerAction();		//隐藏当前玩家行动界面
-										//当前玩家行动信息
-	const int nowPlayerIndex = this->getNowPlayerIndex();
-	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
-	if (nowPlayer.getPlayerAction() == actionType::Nothing) {
-		this->m_ui->hidePlayerActionMessage(nowPlayerIndex);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::Allin) {
-		const int allinMoney = nowPlayer.getNowBet();
-		string actionMessage = "allin";
-		if (allinMoney > 0)
-			actionMessage += ":" + to_string(allinMoney);
-		this->showNowPlayerActionMessage(actionMessage);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::Call) {
-		const int callMoney = nowPlayer.getNowBet();
-		string actionMessage = "跟注：" + to_string(callMoney);
-		this->showNowPlayerActionMessage(actionMessage);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::Check) {
-		string actionMessage = "看牌";
-		this->showNowPlayerActionMessage(actionMessage);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::Raise) {
-		const int raiseMoney = nowPlayer.getNowBet();
-		string actionMessage = "加注至：" + to_string(raiseMoney);
-		this->showNowPlayerActionMessage(actionMessage);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::Fold) {
-		string actionMessage = "弃牌";
-		this->showNowPlayerActionMessage(actionMessage);
-	}
-	else if (nowPlayer.getPlayerAction() == actionType::ErrorAction) {
-
-	}
-	else {}
+	this->hideNowPlayerAllAction();		//隐藏当前玩家行动界面
+	this->showNowPlayerChip();			//显示当前玩家筹码信息
+	this->showNowPlayerActionMessage();	//当前玩家行动信息
 }
 
 void game::finishThisRound() {
+	this->showPot();	//展示底池
 	for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
 		player& curPlayer = this->getPlayer(i_player);
 		if (curPlayer.getPlayerType() == playerType::OnSitePlayer) {
-			this->m_ui->hidePlayerActionMessage(i_player);
+			this->hidePlayerActionMessage(i_player);
 			if (curPlayer.getPlayerAction() != actionType::Allin) {		//对于非allin的玩家，设定行动为什么也没做，待下轮行动
 				curPlayer.setPlayerAction(actionType::Nothing);
 			}
@@ -330,6 +357,8 @@ void game::finishThisRound() {
 bool game::nowPlayerRender() {
 	const int nowPlayerIndex = this->getNowPlayerIndex();
 	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
+	this->hidePlayerActionMessage(nowPlayerIndex);		//应该单独拿出去作为一个函数
+
 	if (nowPlayer.hasAllin()) {
 		this->afterPlayerAction();
 		return true;
@@ -338,13 +367,13 @@ bool game::nowPlayerRender() {
 	const int playerNowBet = nowPlayer.getNowBet();
 	const int playerChip = nowPlayer.getChip();
 	if (minBet <= playerNowBet) {	//当前下注小于本人已下注
-		this->m_ui->playerCheckRaiseFoldAction(nowPlayerIndex, game::bigBind, playerChip);
+		this->showPlayerCheckRaiseFoldAction(nowPlayerIndex);
 	}
 	else if (minBet >= playerChip) {	//需要allin
-		this->m_ui->playerAllinFoldAction(nowPlayerIndex, playerChip);
+		this->showPlayerAllinFoldAction(nowPlayerIndex);
 	}
 	else if (minBet < playerChip && minBet > playerNowBet) {	//当前最小下注大于已下注
-		this->m_ui->playerCallRaiseFoldAction(nowPlayerIndex, minBet - playerNowBet, minBet + this->game::bigBind, playerChip);
+		this->showPlayerCallRaiseFoldAction(nowPlayerIndex);
 	}
 	else {}
 	return true;
@@ -352,6 +381,7 @@ bool game::nowPlayerRender() {
 
 
 bool game::begin() {
+	this->hideBegin();
 	this->m_calledPlayersIndex.clear();
 	for (int playerIndex = 0; playerIndex < maxNumOfPlayers; ++playerIndex) {
 		if (this->m_players[playerIndex].getPlayerType() == playerType::OnSitePlayer) {
@@ -366,12 +396,15 @@ bool game::begin() {
 	this->updateDealer();		//更新dealer
 	//this->initPlayersState();	//初始化玩家状态
 	this->clearCommonCards();	//清空桌上的牌
+	this->clearPot();
 	this->clearSidePot();		//清空边池
+	this->hideAllPlayerSidePot();				//隐藏边池，可以不写？
 	this->shuffleCardHeap();	//洗牌
 	this->renderGame();			//渲染游戏界面
 	this->nextRound();			//进行下一轮
 	return true;
 }
+
 
 //bool game::begin() {
 //	const int numOfPlayers = this->getCalledPlayersIndex().size();
@@ -457,23 +490,27 @@ vector<int> game::getMaxPlayersIndex(vector<int> const & curPlayerIndexSet){
 }
 
 void game::settle(){		//结算
-	
+	if (this->m_calledPlayersIndex.size() > 1)
+		this->calCardTypeAndPointForAll();
 	//底池结算，已allin的不计算，等边池
 	{
 		vector<int> participateInPot;
 		for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
 			int playerIndex = *playerIndexIterator;
 			player& curPlayer = this->getPlayer(playerIndex);
+			
 			if (!curPlayer.hasAllin())
 				participateInPot.push_back(playerIndex);
 		}
-		vector<int> winPlayerIndexesInPot = this->getMaxPlayersIndex(participateInPot);
-		int winMoney = this->m_pot / (winPlayerIndexesInPot.size());
-		int remainderMoney = this->m_pot % (winPlayerIndexesInPot.size());
-		for (auto winPlayerIndex : winPlayerIndexesInPot) {
-			this->getPlayer(winPlayerIndex).addToWinMoney(winMoney);
-			if (remainderMoney-- > 0)
-				this->getPlayer(winPlayerIndex).addToWinMoney(1);
+		if (!participateInPot.empty()) {
+			vector<int> winPlayerIndexesInPot = this->getMaxPlayersIndex(participateInPot);
+			int winMoney = this->m_pot / (winPlayerIndexesInPot.size());
+			int remainderMoney = this->m_pot % (winPlayerIndexesInPot.size());
+			for (auto winPlayerIndex : winPlayerIndexesInPot) {
+				this->getPlayer(winPlayerIndex).addToWinMoney(winMoney);
+				if (remainderMoney-- > 0)
+					this->getPlayer(winPlayerIndex).addToWinMoney(1);
+			}
 		}
 	}
 
@@ -481,13 +518,15 @@ void game::settle(){		//结算
 	for (auto const& sidePot : this->m_sidePots) {
 		int sidePotMoney = sidePot.getSidePotMoney();									//这两行，要不要改成函数呢，那就得写一个边池类
 		vector<int> const& participateInSidePot = sidePot.getSidePotParticipatIndex();	//这两行
-		vector<int> winPlayerIndexesInSidePot = this->getMaxPlayersIndex(participateInSidePot);
-		int winMoney = sidePotMoney / (winPlayerIndexesInSidePot.size());
-		int remainderMoney = sidePotMoney % (winPlayerIndexesInSidePot.size());
-		for (auto winPlayerIndex : winPlayerIndexesInSidePot) {
-			this->getPlayer(winPlayerIndex).addToWinMoney(winMoney);
-			if (remainderMoney-- > 0)
-				this->getPlayer(winPlayerIndex).addToWinMoney(1);
+		if (!participateInSidePot.empty()) {
+			vector<int> winPlayerIndexesInSidePot = this->getMaxPlayersIndex(participateInSidePot);
+			int winMoney = sidePotMoney / (winPlayerIndexesInSidePot.size());
+			int remainderMoney = sidePotMoney % (winPlayerIndexesInSidePot.size());
+			for (auto winPlayerIndex : winPlayerIndexesInSidePot) {
+				this->getPlayer(winPlayerIndex).addToWinMoney(winMoney);
+				if (remainderMoney-- > 0)
+					this->getPlayer(winPlayerIndex).addToWinMoney(1);
+			}
 		}
 	}
 	//玩家自己结算
@@ -505,9 +544,14 @@ void game::settle(){		//结算
 void game::updatePots(){	//更新底池与边池
 	//先按照当前轮下注排序，从小到大
 	vector<int> playerNowBetSortedIndexes;
-	for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
-		int curPlayerIndex = *playerIndexIterator;
-		playerNowBetSortedIndexes.push_back(curPlayerIndex);
+	//for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
+	//	int curPlayerIndex = *playerIndexIterator;
+	//	playerNowBetSortedIndexes.push_back(curPlayerIndex);
+	//}
+	for (int i_player = 0; i_player < (int)this->m_players.size(); ++i_player) {
+		if (this->m_players[i_player].getNowBet() > 0) {				//只要下注了就加进去，不论是否弃牌
+			playerNowBetSortedIndexes.push_back(i_player);
+		}
 	}
 	sort(playerNowBetSortedIndexes.begin(), playerNowBetSortedIndexes.end(), [&](int index1, int index2) {
 		if (this->getPlayer(index1).getNowBet() == this->getPlayer(index2).getNowBet())
@@ -517,18 +561,161 @@ void game::updatePots(){	//更新底池与边池
 	for (int i = 0; i < (int)playerNowBetSortedIndexes.size(); ++i) {
 		int curPlayerIndex = playerNowBetSortedIndexes[i];
 		player& curPlayer = this->getPlayer(curPlayerIndex);
-		if (curPlayer.isAllinThisRound()) {	//当前轮allin了
+		if (curPlayer.isAllinThisRound()) {	//当前轮allin了，allin必不可能是fold
 			int moneyPerPlayer = curPlayer.getNowBet();
 			int newSidePotIndex = this->addNewSidePot((moneyPerPlayer - hasInSidePot)*(playerNowBetSortedIndexes.size() - i) + this->m_pot);//设置边池，一局游戏仅在for中更新一次即可
 			this->m_pot = 0;
-			for (int j = i; j < (int)playerNowBetSortedIndexes.size(); ++j) {
+			for (int j = i; j < (int)playerNowBetSortedIndexes.size(); ++j) {		//本就可能添加fold的人，如本轮没fold后续fold了
 				this->addPlayerToLastSidePot(newSidePotIndex, playerNowBetSortedIndexes[j]);												//添加边池人员
 			}
-			hasInSidePot += moneyPerPlayer;
+			hasInSidePot = moneyPerPlayer;
+
+			this->showPlayerSidePot(curPlayerIndex, this->m_sidePots[newSidePotIndex].getSidePotMoney());		//渲染边池，可以不加，大于0的判断在底层
 		}
-		else {	//出现一次无人allin 后续必无人allin
+		else {	//出现一次无人allin 后续必无人allin，（下注的都需要考虑，包括弃牌的，所以后续可能有allin，比如1 allin， 2 raise， 3 raise， 2再fold）
 			this->m_pot += curPlayer.getNowBet() - hasInSidePot;	//非allin的放进底池里
 		}
 		curPlayer.setNowBet(0);		//此玩家此轮下注已进入底池或边池，置为0
 	}
+	this->setMinBet(0);	//最小bet为0
 }
+
+void game::showPlayerChip(const int playerIndex)
+{
+	const int chip = this->getPlayer(playerIndex).getChip();
+	this->m_ui->showPlayerChip(playerIndex, chip);
+}
+
+void game::showPlayerName(const int playerIndex) {
+	string const& name = this->getPlayer(playerIndex).getName();
+	this->m_ui->showPlayerName(playerIndex, name);
+}
+
+void game::showPlayerHandCards(const int playerIndex) {
+	vector<card> const& cards = this->getPlayer(playerIndex).getHandCards();
+	this->m_ui->showPlayerHandCards(playerIndex, cards);
+}
+
+void game::showPlayerActionMessage(const int playerIndex)
+{
+	player const& nowPlayer = this->getPlayer(playerIndex);
+	if (nowPlayer.getPlayerAction() == actionType::Nothing) {
+		this->m_ui->hidePlayerActionMessage(playerIndex);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Allin) {
+		const int allinMoney = nowPlayer.getNowBet();
+		string actionMessage = "allin";
+		if (allinMoney > 0)
+			actionMessage += ":" + to_string(allinMoney);
+		this->m_ui->showPlayerActionMessage(playerIndex, actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Call) {
+		const int callMoney = nowPlayer.getNowBet();
+		string actionMessage = "跟注：" + to_string(callMoney);
+		this->m_ui->showPlayerActionMessage(playerIndex, actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Check) {
+		string actionMessage = "看牌";
+		this->m_ui->showPlayerActionMessage(playerIndex, actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Raise) {
+		const int raiseMoney = nowPlayer.getNowBet();
+		string actionMessage = "加注至：" + to_string(raiseMoney);
+		this->m_ui->showPlayerActionMessage(playerIndex, actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::Fold) {
+		string actionMessage = "弃牌";
+		this->m_ui->showPlayerActionMessage(playerIndex, actionMessage);
+	}
+	else if (nowPlayer.getPlayerAction() == actionType::ErrorAction) {
+
+	}
+	else {}
+}
+
+void game::showPlayerSidePot(const int playerIndex, const int money)
+{
+	this->m_ui->showPlayerSidePot(playerIndex, money);
+}
+
+void game::showPlayerMessage(const int playerIndex, string const & message)
+{
+	this->m_ui->showPlayerActionMessage(playerIndex, message);
+}
+
+void game::showPlayerRaiseAction(const int playerIndex)
+{
+	player const& curPlayer = this->getPlayer(playerIndex);
+	const int maxMoney = curPlayer.getChip();
+	const int minMoney = this->m_minBet + game::bigBind;			//+大盲为最小加注
+	this->m_ui->showPlayerRaiseAction(playerIndex, minMoney, maxMoney);
+}
+
+void game::showPlayerAllinAction(const int playerIndex)
+{
+	player const& curPlayer = this->getPlayer(playerIndex);
+	const int maxMoney = curPlayer.getChip();
+	this->m_ui->showPlayerAllinAction(playerIndex, maxMoney);
+}
+
+void game::showPlayerCheckAction(const int playerIndex)
+{
+	this->m_ui->showPlayerCheckAction(playerIndex);
+}
+
+void game::showPlayerCallAction(const int playerIndex)
+{
+	const int callMoney = this->m_minBet;
+	this->m_ui->showPlayerCallAction(playerIndex, callMoney);
+}
+
+void game::showPlayerFoldAction(const int playerIndex)
+{
+	this->m_ui->showPlayerFoldAction(playerIndex);
+}
+
+void game::showPlayerNameCardsChip(const int playerIndex)
+{
+	this->showPlayerName(playerIndex);
+	this->showPlayerHandCards(playerIndex);
+	this->showPlayerChip(playerIndex);
+}
+
+void game::showPlayerCheckRaiseFoldAction(const int playerIndex)
+{
+	this->showPlayerCheckAction(playerIndex);
+	this->showPlayerRaiseAction(playerIndex);
+	this->showPlayerFoldAction(playerIndex);
+}
+
+void game::showPlayerAllinFoldAction(const int playerIndex)
+{
+	this->showPlayerAllinAction(playerIndex);
+	this->showPlayerFoldAction(playerIndex);
+}
+
+void game::showPlayerCallRaiseFoldAction(const int playerIndex)
+{
+	this->showPlayerCallAction(playerIndex);
+	this->showPlayerRaiseAction(playerIndex);
+	this->showPlayerFoldAction(playerIndex);
+}
+
+void game::hidePlayerAllAction(const int playerIndex)
+{
+	this->hidePlayerRaiseAction(playerIndex);
+	this->hidePlayerAllinAction(playerIndex);
+	this->hidePlayerCheckAction(playerIndex);
+	this->hidePlayerCallAction(playerIndex);
+	this->hidePlayerFoldAction(playerIndex);
+}
+
+void game::hidePlayer(const int playerIndex)
+{
+	this->hidePlayerAllAction(playerIndex);
+	this->hidePlayerName(playerIndex);
+	this->hidePlayerChip(playerIndex);
+	this->hidePlayerHandCards(playerIndex);
+	this->hidePlayerActionMessage(playerIndex);
+}
+

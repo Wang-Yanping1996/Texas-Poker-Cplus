@@ -27,12 +27,6 @@
     <QtRcc Include="TexasPokerNew.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <QtMoc Include="TexasPokerNew.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <ClCompile Include="TexasPokerNew.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -47,7 +41,7 @@
     <ClCompile Include="..\src\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\TexasPokerSingleUi.cpp">
+    <ClCompile Include="..\src\singleGameUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -61,8 +55,23 @@
     <ClInclude Include="..\include\player.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\TexasPokerSingleUi.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\include\singleGameUI.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TexasPokerNew.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="image\tubiao\poker_window_tubiao.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
