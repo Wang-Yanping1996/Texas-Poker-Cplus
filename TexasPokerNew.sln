@@ -5,16 +5,36 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TexasPokerNew", "TexasPokerNew\TexasPokerNew.vcxproj", "{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TexasPokerClient", "TexasPokerClient\TexasPokerClient.vcxproj", "{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TexasPokerServer", "TexasPokerServer\TexasPokerServer.vcxproj", "{9BB11489-78FD-4F82-93DE-94CE251488EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Debug|x64.ActiveCfg = Debug|x64
 		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Debug|x64.Build.0 = Debug|x64
+		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Debug|x86.ActiveCfg = Debug|x64
 		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Release|x64.ActiveCfg = Release|x64
 		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Release|x64.Build.0 = Release|x64
+		{FFEA78DA-1704-4C69-BE0C-8BB901CFE2ED}.Release|x86.ActiveCfg = Release|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Debug|x64.ActiveCfg = Debug|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Debug|x64.Build.0 = Debug|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Debug|x86.ActiveCfg = Debug|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Release|x64.ActiveCfg = Release|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Release|x64.Build.0 = Release|x64
+		{BC07A65D-046C-40D1-AEA1-EB5006F8C57B}.Release|x86.ActiveCfg = Release|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Debug|x64.ActiveCfg = Debug|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Debug|x64.Build.0 = Debug|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Debug|x86.ActiveCfg = Debug|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Release|x64.ActiveCfg = Release|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Release|x64.Build.0 = Release|x64
+		{9BB11489-78FD-4F82-93DE-94CE251488EE}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
