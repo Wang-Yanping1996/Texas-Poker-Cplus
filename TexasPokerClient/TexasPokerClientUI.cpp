@@ -3,6 +3,10 @@
 QString getCardFileName(card const& c) {
 	cardColor color = c.getColor();
 	cardNumber num = c.getNumber();
+	if (color == cardColor::CardBackColor&&num == cardNumber::CardBackNumber) {
+		QString cardFileName = QString::fromUtf8("image/poker/") + QString::fromUtf8("back") + QString::fromUtf8(".jpg");
+		return cardFileName;
+	}
 	QString cardFileName = QString::fromUtf8("image/poker/") + QString::number((int)color) + QString::fromUtf8("_") + QString::number((int)(num / 10)) + QString::number((int)(num % 10)) + QString::fromUtf8(".jpg");
 	return cardFileName;
 }
@@ -10,10 +14,10 @@ vector<card> QByteArrayToCards(QByteArray const & qArray)
 {
 	QByteArray dataArray = qArray;
 	vector<card> cards(0);
-	while (dataArray.length() >= 2 * commandAndData::byteOfInt) {	//1张牌是颜色+数字，2个字节
-		cardColor color = (cardColor)bytes4ToInt(dataArray.left(commandAndData::byteOfInt));
-		cardNumber number = (cardNumber)bytes4ToInt(dataArray.mid(commandAndData::byteOfInt, commandAndData::byteOfInt));
-		dataArray.remove(0, 2 * commandAndData::byteOfInt);
+	while (dataArray.length() >= 2 * commandAndDataToClient::byteOfInt) {	//1张牌是颜色+数字，2个字节
+		cardColor color = (cardColor)bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+		cardNumber number = (cardNumber)bytes4ToInt(dataArray.mid(commandAndDataToClient::byteOfInt, commandAndDataToClient::byteOfInt));
+		dataArray.remove(0, 2 * commandAndDataToClient::byteOfInt);
 		cards.push_back(card(color, number));
 	}
 	return cards;
@@ -235,6 +239,42 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	begin->setFont(font);
 	begin->hide();
 
+	raise = new QPushButton(centralWidget);
+	raise->setObjectName(QStringLiteral("raise"));
+	raise->setGeometry(QRect(550, 470, 70, 23));
+	allin = new QPushButton(centralWidget);
+	allin->setObjectName(QStringLiteral("raise"));
+	allin->setGeometry(QRect(550, 470, 70, 23));
+	check = new QPushButton(centralWidget);
+	check->setObjectName(QStringLiteral("check"));
+	check->setGeometry(QRect(470, 470, 70, 23));
+	call = new QPushButton(centralWidget);
+	call->setObjectName(QStringLiteral("check"));
+	call->setGeometry(QRect(470, 470, 70, 23));
+	fold = new QPushButton(centralWidget);
+	fold->setObjectName(QStringLiteral("fold"));
+	fold->setGeometry(QRect(630, 470, 70, 23));
+	raiseMoney = new QSpinBox(centralWidget);
+	raiseMoney->setObjectName(QStringLiteral("spinBox"));
+	raiseMoney->setGeometry(QRect(550, 440, 47, 22));
+	raise->raise();
+	allin->raise();
+	check->raise();
+	fold->raise();
+	call->raise();
+	raiseMoney->raise();
+	raise->hide();
+	allin->hide();
+	check->hide();
+	fold->hide();
+	call->hide();
+	raiseMoney->hide();
+
+	raise->setText(QStringLiteral("加注"));
+	allin->setText(QStringLiteral("allin"));
+	check->setText(QStringLiteral("看牌"));
+	fold->setText(QStringLiteral("弃牌"));
+	call->setText(QStringLiteral("跟注"));
 	flop->setText(QApplication::translate("QtWidgetsApplication1Class", "\347\277\273\347\211\214", Q_NULLPTR));
 	turn->setText(QApplication::translate("QtWidgetsApplication1Class", "\350\275\254\347\211\214", Q_NULLPTR));
 	river->setText(QApplication::translate("QtWidgetsApplication1Class", "\346\262\263\347\211\214", Q_NULLPTR));
@@ -265,150 +305,161 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 
 	connect(m_connect, SIGNAL(clicked()), this, SLOT(connectTcp()));
 	connect(m_tcpClient, SIGNAL(readyRead()), this, SLOT(readData()));
+	connect(begin, SIGNAL(clicked()), this, SLOT(clientReady()));
 
+	connect(raise, SIGNAL(clicked()), this, SLOT(nowPlayerRaise()));
+	connect(allin, SIGNAL(clicked()), this, SLOT(nowPlayerAllin()));
+	connect(check, SIGNAL(clicked()), this, SLOT(nowPlayerCheck()));
+	connect(call, SIGNAL(clicked()), this, SLOT(nowPlayerCall()));
+	connect(fold, SIGNAL(clicked()), this, SLOT(nowPlayerFold()));
 }
 
 //好累。。。
 void TexasPokerClientUI::analyzeCommand(QByteArray received)
 {
-	QByteArray commandArray = received.left(commandAndData::byteOfInt);
+	QByteArray commandArray = received.left(commandAndDataToClient::byteOfInt);
 	QByteArray dataArray = received;
-	dataArray.remove(0, commandAndData::byteOfInt);
+	dataArray.remove(0, commandAndDataToClient::byteOfInt);
 	
-	tcpCommand receivedCommand = (tcpCommand)bytes4ToInt(commandArray);
+	tcpCommandToClient receivedCommand = (tcpCommandToClient)bytes4ToInt(commandArray);
 
-	if (receivedCommand&tcpCommand::noCommand) {
+	if (receivedCommand&tcpCommandToClient::noCommandToClient) {
 		return;
 	}
-	else if (receivedCommand&tcpCommand::showCommonCardsCommand) {
+	else if (receivedCommand&tcpCommandToClient::showCommonCardsCommand) {
 		//vector<card> commonCards(0);
-		//while (dataArray.length() >= 2*commandAndData::byteOfInt) {	//1张牌是颜色+数字，2个字节
-		//	cardColor color = (cardColor)bytes4ToInt(dataArray.left(commandAndData::byteOfInt));
-		//	cardNumber number = (cardNumber)bytes4ToInt(dataArray.mid(commandAndData::byteOfInt, commandAndData::byteOfInt));
-		//	dataArray.remove(0, 2 * commandAndData::byteOfInt);
+		//while (dataArray.length() >= 2*commandAndDataToClient::byteOfInt) {	//1张牌是颜色+数字，2个字节
+		//	cardColor color = (cardColor)bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+		//	cardNumber number = (cardNumber)bytes4ToInt(dataArray.mid(commandAndDataToClient::byteOfInt, commandAndDataToClient::byteOfInt));
+		//	dataArray.remove(0, 2 * commandAndDataToClient::byteOfInt);
 		//	commonCards.push_back(card(color, number));
 		//}
 		vector<card> commonCards = QByteArrayToCards(dataArray);
 		this->showCommonCards(commonCards);
 	}
-	else if (receivedCommand&tcpCommand::hideCommonCardsCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideCommonCardsCommand) {
 		this->hideCommonCards();
 	}
-	else if (receivedCommand&tcpCommand::showRoundCommand) {
+	else if (receivedCommand&tcpCommandToClient::showRoundCommand) {
 		gameRound round = (gameRound)bytes4ToInt(dataArray);
 		this->showRound(round);
 	}
-	else if (receivedCommand&tcpCommand::hideRoundCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideRoundCommand) {
 		this->hideRound();
 	}
-	else if (receivedCommand&tcpCommand::showPotCommand) {
+	else if (receivedCommand&tcpCommandToClient::showPotCommand) {
 		const int pot = bytes4ToInt(dataArray);
 		this->showPot(pot);
 	}
-	else if (receivedCommand&tcpCommand::hidePotCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePotCommand) {
 		this->hidePot();
 	}
-	else if (receivedCommand&tcpCommand::showBeginCommand) {
+	else if (receivedCommand&tcpCommandToClient::showBeginCommand) {
 		this->showBegin();
 	}
-	else if (receivedCommand&tcpCommand::hideBeginCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideBeginCommand) {
 		this->hideBegin();
 	}
-	else if (receivedCommand&tcpCommand::showPlayerHandCardsCommand) {
-		QByteArray playerIndexArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showPlayerHandCardsCommand) {	//playerIndex + cards
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int playerIndex = bytes4ToInt(playerIndexArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		vector<card> handCards = QByteArrayToCards(dataArray);
 		this->showPlayerHandCards(playerIndex, handCards);
 	}
-	else if (receivedCommand&tcpCommand::showPlayerNameCommand) {
-		QByteArray playerIndexArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showPlayerNameCommand) {//playerIndex + name
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int playerIndex = bytes4ToInt(playerIndexArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const string playerName = dataArray.toStdString();
 		this->showPlayerName(playerIndex, playerName);
 	}
-	else if (receivedCommand&tcpCommand::showPlayerChipCommand) {
-		QByteArray playerIndexArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showPlayerChipCommand) {
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int playerIndex = bytes4ToInt(playerIndexArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const int chip = bytes4ToInt(dataArray);
 		this->showPlayerChip(playerIndex, chip);
 	}
-	else if (receivedCommand&tcpCommand::showPlayerActionMessageCommand) {
-		QByteArray playerIndexArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showPlayerActionMessageCommand) {
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int playerIndex = bytes4ToInt(playerIndexArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const string actionMessage = dataArray.toStdString();
 		this->showPlayerActionMessage(playerIndex, actionMessage);
 	}
-	else if (receivedCommand&tcpCommand::showPlayerSidePotCommand) {
-		QByteArray playerIndexArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showPlayerSidePotCommand) {
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int playerIndex = bytes4ToInt(playerIndexArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const int sidePot = bytes4ToInt(dataArray);
 		this->showPlayerSidePot(playerIndex, sidePot);
 	}
-	else if (receivedCommand&tcpCommand::hidePlayerHandCardsCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePlayerHandCardsCommand) {
 		const int playerIndex = bytes4ToInt(dataArray);
 		this->hidePlayerHandCards(playerIndex);
 	}
-	else if (receivedCommand&tcpCommand::hidePlayerNameCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePlayerNameCommand) {
 		const int playerIndex = bytes4ToInt(dataArray);
 		this->hidePlayerName(playerIndex);
 	}
-	else if (receivedCommand&tcpCommand::hidePlayerChipCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePlayerChipCommand) {
 		const int playerIndex = bytes4ToInt(dataArray);
 		this->hidePlayerChip(playerIndex);
 	}
-	else if (receivedCommand&tcpCommand::hidePlayerActionMessageCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePlayerActionMessageCommand) {
 		const int playerIndex = bytes4ToInt(dataArray);
 		this->hidePlayerActionMessage(playerIndex);
 	}
-	else if (receivedCommand&tcpCommand::hidePlayerSidePotCommand) {
+	else if (receivedCommand&tcpCommandToClient::hidePlayerSidePotCommand) {
 		const int playerIndex = bytes4ToInt(dataArray);
 		this->hidePlayerSidePot(playerIndex);
 	}
-	else if (receivedCommand&tcpCommand::showClientPlayerRaiseActionCommand) {
-		QByteArray minMoneyArray = dataArray.left(commandAndData::byteOfInt);
+	else if (receivedCommand&tcpCommandToClient::showClientPlayerRaiseActionCommand) {
+		QByteArray minMoneyArray = dataArray.left(commandAndDataToClient::byteOfInt);
 		const int minMoney = bytes4ToInt(minMoneyArray);
-		dataArray.remove(0, commandAndData::byteOfInt);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const int maxMoney = bytes4ToInt(dataArray);
 		this->showClientPlayerRaiseAction(minMoney, maxMoney);
 	}
-	else if (receivedCommand&tcpCommand::showClientPlayerAllinActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::showClientPlayerAllinActionCommand) {
 		const int allMoney = bytes4ToInt(dataArray);
 		this->showClientPlayerAllinAction(allMoney);
 	}
-	else if (receivedCommand&tcpCommand::showClientPlayerCheckActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::showClientPlayerCheckActionCommand) {
 		this->showClientPlayerCheckAction();
 	}
-	else if (receivedCommand&tcpCommand::showClientPlayerCallActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::showClientPlayerCallActionCommand) {
 		const int callMoney = bytes4ToInt(dataArray);
 		this->showClientPlayerCallAction(callMoney);
 	}
-	else if (receivedCommand&tcpCommand::showClientPlayerFoldActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::showClientPlayerFoldActionCommand) {
 		this->showClientPlayerFoldAction();
 	}
-	else if (receivedCommand&tcpCommand::hideClientPlayerRaiseActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideClientPlayerRaiseActionCommand) {
 		this->hideClientPlayerRaiseAction();
 	}
-	else if (receivedCommand&tcpCommand::hideClientPlayerAllinActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideClientPlayerAllinActionCommand) {
 		this->hideClientPlayerAllinAction();
 	}
-	else if (receivedCommand&tcpCommand::hideClientPlayerCheckActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideClientPlayerCheckActionCommand) {
 		this->hideClientPlayerCheckAction();
 	}
-	else if (receivedCommand&tcpCommand::hideClientPlayerCallActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideClientPlayerCallActionCommand) {
 		this->hideClientPlayerCallAction();
 	}
-	else if (receivedCommand&tcpCommand::hideClientPlayerFoldActionCommand) {
+	else if (receivedCommand&tcpCommandToClient::hideClientPlayerFoldActionCommand) {
 		this->hideClientPlayerFoldAction();
 	}
-	else if (receivedCommand&tcpCommand::setClientPlayerIndex) {
+	else if (receivedCommand&tcpCommandToClient::setClientPlayerIndex) {
 		const int index = bytes4ToInt(dataArray);
 		this->setClientPlayerIndex(index);
 	}
+}
+
+void TexasPokerClientUI::sendCommandAndDataToServer(commandAndDataToServer toSend) const
+{
+	this->m_tcpClient->write(toSend.getTcpSend());
 }
 
 void TexasPokerClientUI::showCommonCards(vector<card> const & needShowCommonCards) const {
@@ -562,18 +613,59 @@ void TexasPokerClientUI::connectTcp() {
 	QString receivedAddress = m_address->text();
 	QHostAddress honstAddress;
 	if (!honstAddress.setAddress(receivedAddress)){
-		statusBar->showMessage(QStringLiteral("无效的IP地址！"));
+		QMessageBox::about(this, QStringLiteral("连接失败"), QStringLiteral("无效的IP地址！"));
 		return;
 	}
 	//auto a = testAddress.toIPv4Address();
 	quint16 hostPort = 6060;
 	m_tcpClient->connectToHost(honstAddress, hostPort);
-	const bool connected = m_tcpClient->waitForConnected();
+	const bool connected = m_tcpClient->waitForConnected(1000);
 	if (!connected) {
-		statusBar->showMessage(QStringLiteral("连接失败！"));
+		QMessageBox::about(this, QStringLiteral("连接失败"), QStringLiteral("服务器未响应"));
 		return;
 	}
 	//连接成功，出现自己名字和开始按键，应该由服务器发送
+	bool flag = connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	
+	//关闭ip地址框和connect
+	this->m_address->hide();
+	this->m_connect->hide();
+}
+void TexasPokerClientUI::nowPlayerRaise()
+{
+	const int raiseMoney = this->raiseMoney->text().toInt();
+	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerRaiseCommand, raiseMoney);
+	this->sendCommandAndDataToServer(toSend);
+}
+
+void TexasPokerClientUI::nowPlayerAllin()
+{
+	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerAllinCommand);
+	this->sendCommandAndDataToServer(toSend);
+}
+
+void TexasPokerClientUI::nowPlayerCheck()
+{
+	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerCheckCommand);
+	this->sendCommandAndDataToServer(toSend);
+}
+
+void TexasPokerClientUI::nowPlayerCall()
+{
+	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerCallCommand);
+	this->sendCommandAndDataToServer(toSend);
+}
+
+void TexasPokerClientUI::nowPlayerFold()
+{
+	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerFoldCommand);
+	this->sendCommandAndDataToServer(toSend);
+}
+
+void TexasPokerClientUI::clientReady()
+{
+	commandAndDataToServer toSend(tcpCommandToServer::playerReadyCommand);
+	this->sendCommandAndDataToServer(toSend);
+	this->hideBegin();		//自己隐藏了
 }
 
 void TexasPokerClientUI::readData() {			//可能得加个while循环
@@ -598,7 +690,11 @@ void TexasPokerClientUI::readData() {			//可能得加个while循环
 
 		//根据命令进行操作了
 		this->analyzeCommand(commandAndDataArray);
-		
 	}
 }
 
+void TexasPokerClientUI::disconnectTcp() {
+	QMessageBox::about(this, QStringLiteral("连接失败"), QStringLiteral("服务器已断开连接"));
+	//this->close();
+	QApplication::exit();
+}

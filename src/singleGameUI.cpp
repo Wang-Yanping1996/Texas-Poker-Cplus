@@ -71,6 +71,13 @@ playerWindow::playerWindow(QWidget *centralWidget, int x, int y, int playerIndex
 	sidePot->setLayoutDirection(Qt::LeftToRight);
 	sidePot->setAlignment(Qt::AlignCenter);
 
+	begin = new QPushButton(centralWidget);
+	begin->setObjectName(QStringLiteral("begin"));
+	begin->setGeometry(QRect(50 + x, 60 + y, 50, 30));
+	begin->raise();
+	begin->setFont(font1);
+	begin->setText(QStringLiteral("开始"));
+
 	raise->raise();
 	allin->raise();
 	check->raise();
@@ -88,8 +95,8 @@ playerWindow::playerWindow(QWidget *centralWidget, int x, int y, int playerIndex
 	fold->hide();
 	call->hide();
 	raiseMoney->hide();
-	playerName->hide();
-	playerChip->hide();
+	//playerName->hide();
+	//playerChip->hide();
 	actionMessage->hide();
 	sidePot->hide();
 
@@ -102,6 +109,8 @@ playerWindow::playerWindow(QWidget *centralWidget, int x, int y, int playerIndex
 	playerChip->setText(QStringLiteral("筹码："));
 	actionMessage->setText(QStringLiteral("玩家行为："));
 	sidePot->setText(QStringLiteral("边池："));
+
+	connect(this->begin, SIGNAL(clicked()), this, SLOT(playerReady()));
 }
 
 void playerWindow::showHandCards(vector<card> const& c) const {
@@ -252,7 +261,12 @@ void playerWindow::hideAll() const {
 	this->hidePlayerActionMessage();
 	this->hideAllAction();
 }
-
+//player的槽函数
+void playerWindow::playerReady() {
+	this->begin->hide();
+	this->showPlayerActionMessage(QStringLiteral("准备！"));
+	emit beginClicked();
+}
 
 singleGameWindow::singleGameWindow(QWidget *parent, game* g)
 	:QMainWindow(parent), m_game(g)
@@ -338,29 +352,31 @@ singleGameWindow::singleGameWindow(QWidget *parent, game* g)
 	pot->raise();
 	pot->hide();
 
-	begin = new QPushButton(centralWidget);
-	begin->setObjectName(QStringLiteral("begin"));
-	begin->setGeometry(QRect(580, 370, 50, 30));
-	begin->raise();
-	begin->setFont(font);
+	//begin = new QPushButton(centralWidget);
+	//begin->setObjectName(QStringLiteral("begin"));
+	//begin->setGeometry(QRect(580, 370, 50, 30));
+	//begin->raise();
+	//begin->setFont(font);
 	//begin->hide();
 
 	flop->setText(QApplication::translate("QtWidgetsApplication1Class", "\347\277\273\347\211\214", Q_NULLPTR));
 	turn->setText(QApplication::translate("QtWidgetsApplication1Class", "\350\275\254\347\211\214", Q_NULLPTR));
 	river->setText(QApplication::translate("QtWidgetsApplication1Class", "\346\262\263\347\211\214", Q_NULLPTR));
 	pot->setText(QStringLiteral("底池：") + QString::number(10));
-	begin->setText(QStringLiteral("开始"));
+	//begin->setText(QStringLiteral("开始"));
 	for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
 		players[i_player] = new playerWindow(centralWidget, playerPosition[i_player][0], playerPosition[i_player][1], i_player);
+
 		//connect(this->players[i_player]->raise, SIGNAL(clicked()), this, SLOT(testShow()));
 		connect(this->players[i_player]->raise, SIGNAL(clicked()), this, SLOT(nowPlayerRaise()));
 		connect(this->players[i_player]->allin, SIGNAL(clicked()), this, SLOT(nowPlayerAllin()));
 		connect(this->players[i_player]->check, SIGNAL(clicked()), this, SLOT(nowPlayerCheck()));
 		connect(this->players[i_player]->call, SIGNAL(clicked()), this, SLOT(nowPlayerCall()));
 		connect(this->players[i_player]->fold, SIGNAL(clicked()), this, SLOT(nowPlayerFold()));
+		connect(this->players[i_player], SIGNAL(beginClicked()), this, SLOT(gameBegin()));
 	}
 
-	connect(this->begin, SIGNAL(clicked()), this, SLOT(gameBegin()));	
+	//connect(this->begin, SIGNAL(clicked()), this, SLOT(gameBegin()));	
 }
 
 void singleGameWindow::showCommonCards(vector<card> const & needShowCommonCards) const {

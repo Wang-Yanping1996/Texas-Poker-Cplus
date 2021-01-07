@@ -21,6 +21,13 @@ int main(int argc, char *argv[])
 	myGame.setVirUIPoint(&w);
 	w.setGamePoint(&myGame);
     
+	for (int i = 0; i < game::maxNumOfPlayers; ++i) {
+		if (myGame.getPlayer(i).getPlayerType() == playerType::OnSitePlayer) {
+			myGame.showPlayerName(i);
+			myGame.showPlayerChip(i);
+		}
+	}
+
 	w.show();
 	//myGame.begin();
 	

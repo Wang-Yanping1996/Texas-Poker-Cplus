@@ -16,8 +16,8 @@ public:
 	virtual void hideRound()const = 0;
 	virtual void showPot(const int potNum)const = 0;
 	virtual void hidePot()const = 0;
-	virtual void showBegin()const = 0;
-	virtual void hideBegin()const = 0;
+	virtual void showBegin(const int playerIndex)const = 0;
+	virtual void hideBegin(const int playerIndex)const = 0;
 
 	//玩家相关
 	virtual void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const = 0;
@@ -51,6 +51,10 @@ public:
 	virtual void hidePlayerCheckAction(const int nowPlayerIndex)const = 0;
 	virtual void hidePlayerCallAction(const int nowPlayerIndex)const = 0;
 	virtual void hidePlayerFoldAction(const int nowPlayerIndex)const = 0;
+
+	//后添加的show牌方法，在玩家2的client上show玩家1的牌
+	virtual void showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const& handCards)const = 0;
+	virtual void showPlayer1CardBackOnPlayer2(const int player1Index, const int player2Index)const;
 };
 
 //边池类
@@ -109,6 +113,8 @@ private:
 	int m_endPlayerIndex;			//本轮结束玩家序号
 	int m_dealer;					//dealer是谁
 	set<int> m_calledPlayersIndex;	//没有fold的玩家序号集合
+	int m_readyNumOfPlayer;			//准备好的人数
+	bool m_hasStarted;				//是否游戏中
 	virUI* m_ui;
 public:
 	game(string gameID = "No ID",
@@ -123,6 +129,8 @@ public:
 		int endPlayerIndex = -1,
 		int dealer = rand()%maxNumOfPlayers,
 		set<int> calledPlayersIndex = {},
+		int readyNumOfPlayer = 0,
+		bool hasStarted = false,
 		virUI* ui = nullptr
 	) :m_gameID(gameID),
 		m_players(players),
@@ -136,6 +144,8 @@ public:
 		m_endPlayerIndex(endPlayerIndex),
 		m_dealer(dealer),
 		m_calledPlayersIndex(calledPlayersIndex),
+		m_readyNumOfPlayer(readyNumOfPlayer),
+		m_hasStarted(hasStarted),
 		m_ui(ui){
 		m_commonCards.reserve(maxNumOfCommonCards);	//保留空间
 		m_sidePots.reserve(maxNumOfPlayers);			//最多玩家数个边池
@@ -149,6 +159,8 @@ public:
 	player const& getPlayer(int playerIndex)const { return this->m_players[playerIndex]; };
 	int getNextCalledPlayerIndex(const int nowPlayerIndex)const;	//输入可以弃牌，输出还没弃牌的，重写过了
 	int getPreCalledPlayerIndex(const int nowPlayerIndex)const;		//输入可以弃牌，输出还没弃牌的，补写
+	void setGameHasStarted(const bool hasStarted) { this->m_hasStarted = hasStarted; };
+	bool getGameHasStarted()const { return this->m_hasStarted; };
 	//get game
 	int getNumOfPlayers()const;
 	player& getPlayer(string playerID)const;
@@ -163,14 +175,17 @@ public:
 	int getRoundBeginPlayerIndex()const;
 	int getRoundEndPlayerIndex()const;
 	int getDealer()const { return this->m_dealer; };
+	int addNewPlayer(string const& playerName);	//随机添加一个玩家，返回添加玩家的位置
 	set<int>& getCalledPlayersIndex() { return this->m_calledPlayersIndex; };
 	set<int> const& getCalledPlayersIndex()const { return this->m_calledPlayersIndex; };
 	virUI* getVirUIPoint()const { return this->m_ui; };
+	int getNumOfReadyPlayer()const { return this->m_readyNumOfPlayer; };
+	void clearNumOfReadyPlayer() { this->m_readyNumOfPlayer = 0; };
 
 	gameRound updateGameRound();
 	bool addPlayer(player const& p);
 	bool initPlayersState();	
-	void addToPot();
+	void addToPot(const int addMoney) { this->m_pot += addMoney; };		//把money加入底池
 	
 	void setGameID(string gameID) { this->m_gameID = gameID; };
 	void clearCommonCards() { this->m_commonCards.clear(); };
@@ -201,6 +216,8 @@ public:
 	void nowPlayerCall();
 	void nowPlayerCheck();
 	void nowPlayerFold();
+
+	void playerEscape(const int playerIndex);	//逃跑玩家 按fold处理
 
 	void afterPlayerAction();
 
@@ -278,6 +295,10 @@ public:
 	void hidePlayer(const int playerIndex);
 	void hideNowPlayerAllAction();							//当前玩家行动完毕，关闭其行动界面
 
+	void showPlayer1CardsOnPlayer2(const int player1Index, const int player2Index);
+	void showOthersCardBackOnPlayerIndex(const int playerIndex);	//在场的人需要show卡背，该函数只应在begin时调用
+	void showOthersCardBackOnAllClient();							//旁观者也要show卡背
+
 	//game相关
 	void showCommonCards() { this->m_ui->showCommonCards(this->m_commonCards); };
 	void showRound() { this->m_ui->showRound(this->m_round); };
@@ -285,8 +306,10 @@ public:
 	void hideCommonCards() { this->m_ui->hideCommonCards(); };
 	void hideRound() { this->m_ui->hideRound(); };
 	void hidePot() { this->m_ui->hidePot(); };
-	void showBegin() { this->m_ui->showBegin(); };
-	void hideBegin() { this->m_ui->hideBegin(); };
+	void showBegin(const int playerIndex) { this->m_ui->showBegin(playerIndex); };
+	void hideBegin(const int playerIndex) { this->m_ui->hideBegin(playerIndex); };
+	void showAllBegin();
+	void hideAllBegin();
 
 	void showGameEnd();
 };

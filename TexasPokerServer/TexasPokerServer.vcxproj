@@ -43,10 +43,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\vs2015\WorkSpace\TexasPokerNew\include;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Qt5Networkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include\QtCore;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include\QtNetwork;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;D:\vs2015\WorkSpace\TexasPokerNew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Qt5Networkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -82,7 +91,7 @@
     <ClCompile>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -94,6 +103,9 @@
   <ItemGroup>
     <QtRcc Include="TexasPokerServer.qrc" />
     <QtMoc Include="TexasPokerServer.h" />
+    <ClCompile Include="..\src\cardHeap.cpp" />
+    <ClCompile Include="..\src\game.cpp" />
+    <ClCompile Include="..\src\player.cpp" />
     <ClCompile Include="..\src\tcpCommand.cpp" />
     <ClCompile Include="TexasPokerServer.cpp" />
     <ClCompile Include="main.cpp" />

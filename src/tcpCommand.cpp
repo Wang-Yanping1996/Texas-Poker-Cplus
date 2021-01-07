@@ -21,14 +21,20 @@ int bytes4ToInt(QByteArray bytes)
 	return addr;
 }
 
-commandAndData::commandAndData()
+commandAndDataToClient::commandAndDataToClient()
 {
 	m_command.clear(); 
 	m_data.clear(); 
-	m_command = intTo4Bytes((int)tcpCommand::noCommand); 
+	m_command = intTo4Bytes((int)tcpCommandToClient::noCommandToClient);
 }
 
-commandAndData::commandAndData(tcpCommand command, string data)
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command)
+{
+	m_command = intTo4Bytes((int)command);
+	m_data.clear();
+}
+
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, string data)
 {
 	//´ý²âÊÔ
 	m_command = intTo4Bytes((int)command);
@@ -36,7 +42,7 @@ commandAndData::commandAndData(tcpCommand command, string data)
 	m_data = QByteArray::fromStdString(data);
 }
 
-commandAndData::commandAndData(tcpCommand command, vector<card> cards)
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, vector<card> cards)
 {
 	m_command = intTo4Bytes((int)command);
 	m_data.clear();
@@ -46,14 +52,14 @@ commandAndData::commandAndData(tcpCommand command, vector<card> cards)
 	}
 }
 
-commandAndData::commandAndData(tcpCommand command, int num)
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, int num)
 {
 	m_command = intTo4Bytes((int)command);
 	m_data.clear();
 	m_data = m_data.append(intTo4Bytes(num));
 }
 
-commandAndData::commandAndData(tcpCommand command, int num1, int num2)
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, int num1, int num2)
 {
 	m_command = intTo4Bytes((int)command);
 	m_data.clear();
@@ -61,7 +67,7 @@ commandAndData::commandAndData(tcpCommand command, int num1, int num2)
 	m_data = m_data.append(intTo4Bytes(num2));
 }
 
-commandAndData::commandAndData(tcpCommand command, int num, string data)
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, int num, string data)
 {
 	m_command = intTo4Bytes((int)command);
 	m_data.clear();
@@ -69,7 +75,49 @@ commandAndData::commandAndData(tcpCommand command, int num, string data)
 	m_data = m_data.append(QByteArray::fromStdString(data));
 }
 
-QByteArray commandAndData::getTcpSend() const
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, int num, vector<card> cards)
+{
+	m_command = intTo4Bytes((int)command);
+	m_data = intTo4Bytes(num);
+	for (auto const& card : cards) {
+		m_data = m_data.append(intTo4Bytes((int)card.getColor()));
+		m_data = m_data.append(intTo4Bytes((int)card.getNumber()));
+	}
+}
+
+QByteArray commandAndDataToClient::getTcpSend() const
+{
+	QByteArray body = m_command;
+	body.append(m_data);
+
+	const int len = body.length();			//ÓÃµÄint
+	QByteArray head = intTo4Bytes(len);
+	QByteArray tcpSend = body.prepend(head);
+	return tcpSend;
+}
+
+commandAndDataToServer::commandAndDataToServer()
+{
+	m_command.clear();
+	m_data.clear();
+	m_command = intTo4Bytes((int)tcpCommandToServer::noCommandToServer);
+}
+
+commandAndDataToServer::commandAndDataToServer(tcpCommandToServer command)
+{
+	m_command.clear();
+	m_data.clear();
+	m_command = intTo4Bytes((int)command);
+}
+
+commandAndDataToServer::commandAndDataToServer(tcpCommandToServer command, int num)
+{
+	m_command = intTo4Bytes((int)command);
+	m_data.clear();
+	m_data = m_data.append(intTo4Bytes(num));
+}
+
+QByteArray commandAndDataToServer::getTcpSend() const
 {
 	QByteArray body = m_command;
 	body.append(m_data);

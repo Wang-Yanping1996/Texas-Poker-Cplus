@@ -52,6 +52,14 @@
       <AdditionalDependencies>Qt5Networkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include\QtNetwork;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;D:\vs2015\WorkSpace\TexasPokerNew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Qt5Networkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>msvc2015_64</QtInstall>
     <QtModules>core;gui;widgets</QtModules>

@@ -3,8 +3,8 @@
 //#define MAXCARDS (52)
 using namespace std;
 
-enum cardColor { ErrorColor = -1, Club, Diamond, Heart, Spade, E = -1, C, D, H, S };
-enum cardNumber { ErrorNumber = -1, Two = 0, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace };
+enum cardColor { ErrorColor = -1, Club, Diamond, Heart, Spade, CardBackColor, E = -1, C, D, H, S };
+enum cardNumber { ErrorNumber = -1, Two = 0, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace, CardBackNumber};
 enum cardType {ErrorType = -1, HighCard, OnePair, TwoPairs, ThreeOfKind, Straight, Flush, FullHouse, FourOfKind, StraightFlush, RoyalFlush};
 
 string to_string(cardType type);

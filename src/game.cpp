@@ -39,6 +39,15 @@ int game::getPreCalledPlayerIndex(const int nowPlayerIndex) const{	// ‰»Îø…“‘∆˙≈
 	} while (this->m_calledPlayersIndex.find(preCalledPlayerIndex) == this->m_calledPlayersIndex.end());	//’“≤ªµΩ“ª÷±—≠ª∑
 	return preCalledPlayerIndex;
 }
+int game::getNumOfPlayers() const
+{
+	int numOfPlayer = 0;
+	for (int i = 0; i < game::maxNumOfPlayers; ++i) {
+		if (this->m_players[i].getPlayerType() == playerType::OnSitePlayer)
+			numOfPlayer++;
+	}
+	return numOfPlayer;
+}
 int game::getRoundBeginPlayerIndex() const {
 	//int beginPlayerIndex = this->m_dealer;				//¥”dealer∫Û“ªŒªø™ º
 	//do {
@@ -58,6 +67,22 @@ int game::getRoundEndPlayerIndex() const {
 	if (this->m_calledPlayersIndex.find(this->m_dealer) != this->m_calledPlayersIndex.end())
 		return this->m_dealer;
 	return  this->getPreCalledPlayerIndex(this->m_dealer);
+}
+
+int game::addNewPlayer(string const& playerName)
+{
+	vector<int> emptyPlayerIndex(0);
+	for (int i = 0; i < (int)this->m_players.size(); ++i) {
+		if (this->m_players[i].getPlayerType() == playerType::Empty)
+			emptyPlayerIndex.push_back(i);
+	}
+	const int index = rand() % emptyPlayerIndex.size();
+	const int addPlayerIndex = emptyPlayerIndex[index];
+	if (this->m_hasStarted)	//”Œœ∑“—ø™ º£¨Ω¯»Î’ﬂŒ™≈‘π€’ﬂ
+		this->m_players[addPlayerIndex] = player(playerType::Looker, playerName, { card(), card() }, 200);
+	else					//”Œœ∑Œ¥ø™ º£¨Ω¯»Î’ﬂ÷±Ω”…œ≥°
+		this->m_players[addPlayerIndex] = player(playerType::OnSitePlayer, playerName, { card(), card() }, 200);
+	return addPlayerIndex;
 }
 
 //bool game::playersAction() {			//“™≤ª“™øº¬«∞—m_calledPlayersIndexªª≥…“˝”√ªÚ÷∏’Îµƒset£¨∏–æı∏¸∫œ¿Ì“ªµ„£ø
@@ -175,6 +200,18 @@ void game::nowPlayerFold() {
 	//nowPlayer.setPlayerAction(actionType::Fold);	//“—‘⁄player.fold()¿Ô
 	this->afterPlayerAction();
 }
+void game::playerEscape(const int playerIndex)	//∑¬’’fold¥¶¿Ì
+{
+	this->hidePlayer(playerIndex);				//÷±Ω”“˛≤ÿ
+
+	player& escapedPlayer = this->getPlayer(playerIndex);
+	this->addToPot(escapedPlayer.getNowBet());		//“—œ¬◊¢º”»Îµ◊≥ÿ
+	this->hidePlayerHandCards(playerIndex);			//“˛≤ÿ ÷≈∆£¨“—‘⁄fold÷–…Ë÷√Œ™¥ÌŒÛ
+	this->m_calledPlayersIndex.erase(playerIndex);	//¥”“—callºØ∫œ÷–…æ≥˝
+
+	escapedPlayer = player();		//Ω®¡¢“ª∏ˆø’player¥˙ÃÊ
+	//this->afterPlayerAction();	//≤ª‰÷»æ¡À∞…
+}
 void game::afterPlayerAction(){									//ÕÊº“––∂Ø∫Û
 	this->nowPlayerActionComplete();	//µ±«∞ÕÊº“Ω· ¯––∂Ø‰÷»æ
 	if (this->m_nowPlayerIndex == this->m_endPlayerIndex || this->m_calledPlayersIndex.size() <= 1) {		//±æ¬÷Ω· ¯
@@ -222,6 +259,7 @@ void game::nextRound() {
 		this->settle();
 		//»ª∫Û‰÷»æΩ· ¯±ææ÷ª≠√Ê£¨∞¸¿®√øŒªÕÊº“µƒ‘Ÿ¥Œø™ ºº¸∫Õshow≈∆°¢≈∆–Õ£¨‘Ÿ¥Œø™ º∞Û∂®÷¡œ¬“ªæ÷”Œœ∑
 		this->showGameEnd();
+		this->setGameHasStarted(false);	//”Œœ∑Ω· ¯£¨”Œœ∑◊¥Ã¨…Ë÷√Œ™Œ¥ø™ º
 		return;
 	}
 	this->m_round = gameRound(this->m_round + 1);
@@ -230,6 +268,9 @@ void game::nextRound() {
 	this->m_endPlayerIndex = this->getRoundEndPlayerIndex();			//’‚“ª¬÷Ω· ¯µƒÕÊº“
 	this->renderGame();													//“ÚŒ™–¬∑¢≈∆¡À£¨À˘“‘“™÷ÿ–¬‰÷»æ
 	if (this->m_round == PreFlop) {										//∑≠«∞œ¬√§◊¢
+		//∑≠«∞£¨√ø∏ˆøÕªß∂À∂º–Ë“™showÀ˘”–≥˝◊‘º∫“‘Õ‚‘⁄≥°ÕÊº“µƒø®±≥
+		this->showOthersCardBackOnAllClient();
+
 		this->getPlayer(this->m_nowPlayerIndex).add(smallBind);			//–°√§
 		this->getPlayer(this->m_nowPlayerIndex).setPlayerAction(actionType::Raise);
 		this->nowPlayerActionComplete();
@@ -310,6 +351,46 @@ void game::hideNowPlayerAllAction() {
 	this->hidePlayerAllAction(nowPlayerIndex);
 }
 
+void game::showPlayer1CardsOnPlayer2(const int player1Index, const int player2Index)
+{
+	vector<card> handCards = this->m_players[player1Index].getHandCards();
+	this->m_ui->showPlayer1HandCardOnPlayer2(player1Index, player2Index, handCards);
+}
+
+void game::showOthersCardBackOnPlayerIndex(const int playerIndex)
+{
+	for (int i_player = 0; i_player < (int)this->m_players.size(); ++i_player) {	//‘⁄≥°µƒ»À–Ë“™showø®±≥£¨∏√∫Ø ˝÷ª”¶‘⁄begin ±µ˜”√
+		if (this->m_players[i_player].getPlayerType() == playerType::OnSitePlayer && i_player != playerIndex) {
+			this->m_ui->showPlayer1CardBackOnPlayer2(i_player, playerIndex);
+		}
+	}
+}
+
+void game::showOthersCardBackOnAllClient()
+{
+	for (int i_player = 0; i_player < (int)this->m_players.size(); ++i_player) {
+		if (this->m_players[i_player].getPlayerType() != playerType::Empty) {	//≈‘π€’ﬂ“≤“™showø®±≥
+			this->showOthersCardBackOnPlayerIndex(i_player);
+		}
+	}
+}
+
+void game::showAllBegin()
+{
+	for (int i = 0; i < game::maxNumOfPlayers; ++i) {
+		if (this->m_players[i].getPlayerType() == playerType::OnSitePlayer)
+			this->m_ui->showBegin(i);
+	}
+}
+
+void game::hideAllBegin()
+{
+	for (int i = 0; i < game::maxNumOfPlayers; ++i) {
+		if (this->m_players[i].getPlayerType() == playerType::OnSitePlayer)
+			this->m_ui->hideBegin(i);
+	}
+}
+
 void game::showGameEnd()
 {
 	//”Œœ∑Ω· ¯
@@ -329,9 +410,16 @@ void game::showGameEnd()
 			outputMessage += "ÕÊº“ ‰¡À";
 		}
 		this->showPlayerMessage(i_player, outputMessage);
+
+		//show‘⁄≥°ÕÊº“µƒ≈∆
+		for (int i_player2 : this->m_calledPlayersIndex) {
+			if (i_player != i_player2) {
+				this->showPlayer1CardsOnPlayer2(i_player, i_player2);
+			}
+		}
 	}
 	//ø™ º∞¥º¸≥ˆœ÷
-	this->showBegin();
+	this->showAllBegin();
 }
 
 
@@ -381,9 +469,19 @@ bool game::nowPlayerRender() {
 
 
 bool game::begin() {
-	this->hideBegin();
+	//œ»º∆À„ «≤ª «À˘”–ÕÊº“∂º◊º±∏¡À
+	const int numOfPlayer = this->getNumOfPlayers();
+	this->m_readyNumOfPlayer++;
+	if (this->m_readyNumOfPlayer < numOfPlayer) {
+		return false;
+	}
+
+	//this->hideBegin();
 	this->m_calledPlayersIndex.clear();
 	for (int playerIndex = 0; playerIndex < maxNumOfPlayers; ++playerIndex) {
+		if (this->m_players[playerIndex].getPlayerType() == playerType::Looker && this->m_players[playerIndex].getChip() > 0) {
+			this->m_players[playerIndex].setPlayerType(playerType::OnSitePlayer);	//”–«Æµƒ≈‘π€’ﬂ…œ≥°
+		}
 		if (this->m_players[playerIndex].getPlayerType() == playerType::OnSitePlayer) {
 			this->m_calledPlayersIndex.insert(playerIndex);
 		}
@@ -392,13 +490,16 @@ bool game::begin() {
 	if (this->m_calledPlayersIndex.size() <= 1)	//–°”⁄µ»”⁄1∏ˆ»À≤ªƒ‹ÕÊ
 		return false;
 
+	this->m_readyNumOfPlayer = 0;
+
 	this->m_round = Start;		//ø™ º
+	this->setGameHasStarted(true);	//”Œœ∑◊¥Ã¨…ËŒ™ø™ º
 	this->updateDealer();		//∏¸–¬dealer
 	//this->initPlayersState();	//≥ı ºªØÕÊº“◊¥Ã¨
 	this->clearCommonCards();	//«Âø’◊¿…œµƒ≈∆
 	this->clearPot();
 	this->clearSidePot();		//«Âø’±ﬂ≥ÿ
-	this->hideAllPlayerSidePot();				//“˛≤ÿ±ﬂ≥ÿ£¨ø…“‘≤ª–¥£ø
+	this->hideAllPlayerSidePot();	//“˛≤ÿ±ﬂ≥ÿ£¨ø…“‘≤ª–¥£ø
 	this->shuffleCardHeap();	//œ¥≈∆
 	this->renderGame();			//‰÷»æ”Œœ∑ΩÁ√Ê
 	this->nextRound();			//Ω¯––œ¬“ª¬÷
@@ -719,3 +820,8 @@ void game::hidePlayer(const int playerIndex)
 	this->hidePlayerActionMessage(playerIndex);
 }
 
+void virUI::showPlayer1CardBackOnPlayer2(const int player1Index, const int player2Index) const
+{
+	vector<card> cardBacks(player::numOfHandCards, card(cardColor::CardBackColor, cardNumber::CardBackNumber));
+	this->showPlayer1HandCardOnPlayer2(player1Index, player2Index, cardBacks);
+}

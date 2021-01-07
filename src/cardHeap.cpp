@@ -63,7 +63,7 @@ card cardHeap::getCard() {	//获取一张牌，这里直接获取顶部的牌
 	return this->getTopCard();
 }
 card cardHeap::getTopCard() {	//获取顶部的牌
-	if (this->topIndex >= maxCards) {
+	if (this->topIndex >= (int)(maxCards)) {
 		return card(cardColor::ErrorColor, cardNumber::ErrorNumber);
 	}
 	card res = this->cardArray[this->topIndex];

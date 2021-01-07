@@ -1,14 +1,13 @@
 #pragma once
 #include "game.h"
 #include "qbytearray.h"
-#include "qvariant.h"
 //#pragma pack(push, 1)		//1×Ö½Ú¶ÔÆë
 
 QByteArray intTo4Bytes(int i);
 int bytes4ToInt(QByteArray bytes);
 
-enum tcpCommand {
-	noCommand = 0x00000000,
+enum tcpCommandToClient {
+	noCommandToClient = 0x00000000,
 
 	showCommonCardsCommand = 0x00000001,
 	hideCommonCardsCommand = 0x00000002,
@@ -48,17 +47,30 @@ enum tcpCommand {
 	setClientPlayerIndex = 0x10000000
 };
 
-class commandAndData {
+enum tcpCommandToServer {
+	noCommandToServer = 0x00000000,
+
+	nowPlayerRaiseCommand = 0x00000001,
+	nowPlayerAllinCommand = 0x00000002,
+	nowPlayerCheckCommand = 0x00000004,
+	nowPlayerCallCommand = 0x00000008,
+
+	nowPlayerFoldCommand = 0x00000010,
+	playerReadyCommand = 0x00000020
+};
+class commandAndDataToClient {
 public:
 	static const int byteOfInt = 4;
 	static const int byteOfCommand = byteOfInt;
 
-	commandAndData();
-	commandAndData(tcpCommand command, string data);
-	commandAndData(tcpCommand command, vector<card> cards);
-	commandAndData(tcpCommand command, int num);
-	commandAndData(tcpCommand command, int num1, int num2);
-	commandAndData(tcpCommand command, int num, string data);
+	commandAndDataToClient();
+	commandAndDataToClient(tcpCommandToClient command);
+	commandAndDataToClient(tcpCommandToClient command, string data);
+	commandAndDataToClient(tcpCommandToClient command, vector<card> cards);
+	commandAndDataToClient(tcpCommandToClient command, int num);
+	commandAndDataToClient(tcpCommandToClient command, int num1, int num2);
+	commandAndDataToClient(tcpCommandToClient command, int num, string data);
+	commandAndDataToClient(tcpCommandToClient command, int num, vector<card> cards);
 
 	/*tcpCommand getCommand()const { return this->m_command; };
 	QVariant getData()const { return this->m_data; };
@@ -70,34 +82,20 @@ private:
 	QByteArray m_command;
 	QByteArray m_data;
 };
-Q_DECLARE_METATYPE(tcpCommand)
-Q_DECLARE_METATYPE(commandAndData)
-Q_DECLARE_METATYPE(card)
-Q_DECLARE_METATYPE(vector<card>)
-Q_DECLARE_METATYPE(gameRound)
-Q_DECLARE_METATYPE(string)
-//Q_DECLARE_METATYPE(int)
 
-//class wcommandAndData {
-//	static const int commandByte = 8;
-//	static const int dataLenByte = 1;
-//	static const int dataByte = 40;
-//public:
-//	wcommandAndData();
-//	wcommandAndData(tcpCommand command, int dataLen, string data);
-//	wcommandAndData(tcpCommand command, int dataLen, vector<card> cards);
-//	wcommandAndData(tcpCommand command, int dataLen, int num1, int num2);
-//
-//
-//	tcpCommand getCommand()const { return this->m_command; };
-//	QVariant getData()const { return this->m_data; };
-//
-//	void setCommand(tcpCommand command = noCommand) { this->m_command = command; };
-//	void setDate(QVariant data = QVariant()) { this->m_data = data; };
-//private:
-//	QByteArray m_command;
-//	QByteArray m_dataLen;
-//	QByteArray m_data;
-//};
+class commandAndDataToServer {
+public:
+	static const int byteOfInt = 4;
+	static const int byteOfCommand = byteOfInt;
+	commandAndDataToServer();
+	commandAndDataToServer(tcpCommandToServer command);
+	commandAndDataToServer(tcpCommandToServer command, int num);
+
+	QByteArray getTcpSend()const;
+
+private:
+	QByteArray m_command;
+	QByteArray m_data;
+};
 
 

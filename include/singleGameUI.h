@@ -19,7 +19,10 @@ QString getCardFileName(card const& c);
 
 class playerWindow : public QWidget {
 	Q_OBJECT
-
+signals:
+	void beginClicked();
+public slots:
+	void playerReady();
 public:
 	int handCardPosition[2][2] = { { 30,70 },{ 120,70 } };
 
@@ -35,6 +38,7 @@ public:
 	QLabel *sidePot;
 
 	QLabel *actionMessage;
+	QPushButton *begin;
 
 	playerWindow(QWidget *centralWidget, int x, int y, int playerIndex);
 
@@ -91,7 +95,7 @@ public:
 	QLabel *turn;
 	QLabel *river;
 	QLabel *pot;
-	QPushButton *begin;
+	//QPushButton *begin;
 
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;
@@ -111,8 +115,8 @@ public:
 	void hideRound()const;
 	void showPot(const int potNum)const;
 	void hidePot()const;
-	void showBegin()const { this->begin->show(); };
-	void hideBegin()const { this->begin->hide(); };
+	void showBegin(const int playerIndex)const { this->players[playerIndex]->begin->show(); };
+	void hideBegin(const int playerIndex)const { this->players[playerIndex]->begin->hide(); };
 
 	//Íæ¼ÒÏà¹Ø
 	void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const;

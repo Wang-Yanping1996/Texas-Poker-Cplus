@@ -129,6 +129,7 @@ private:
 public:
 	//tcpÃüÁî½âÎö
 	void analyzeCommand(QByteArray received);
+	void sendCommandAndDataToServer(commandAndDataToServer toSend)const;
 
 	//×À×Ó
 	void showCommonCards(vector<card> const& commonCards)const;
@@ -168,5 +169,12 @@ public:
 	virtual void hideClientPlayerFoldAction()const;
 public slots:
 	void connectTcp();
+	void nowPlayerRaise();
+	void nowPlayerAllin();
+	void nowPlayerCheck();
+	void nowPlayerCall();
+	void nowPlayerFold();
+	void clientReady();
 	void readData();
+	void disconnectTcp();
 };
