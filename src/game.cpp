@@ -204,6 +204,10 @@ void game::playerEscape(const int playerIndex)	//仿照fold处理
 {
 	this->hidePlayer(playerIndex);				//直接隐藏
 
+	if (this->getEndPlayerIndex() == playerIndex) {
+		const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);
+		this->setEndPlayerIndex(newEndPlayerIndex);
+	}
 	player& escapedPlayer = this->getPlayer(playerIndex);
 	this->addToPot(escapedPlayer.getNowBet());		//已下注加入底池
 	this->hidePlayerHandCards(playerIndex);			//隐藏手牌，已在fold中设置为错误
@@ -411,14 +415,25 @@ void game::showGameEnd()
 		}
 		this->showPlayerMessage(i_player, outputMessage);
 
-		//show在场玩家的牌
-		for (int i_player2 : this->m_calledPlayersIndex) {
-			if (i_player != i_player2) {
-				this->showPlayer1CardsOnPlayer2(i_player, i_player2);
+		if (this->m_calledPlayersIndex.size() > 1) {	//因弃牌获胜不用show
+			//show在场玩家的牌，非空就show
+			for (int i_player2 = 0; i_player2 < this->m_players.size(); i_player2++) {
+				if (i_player2 != i_player && this->m_players[i_player2].getPlayerType() != playerType::Empty) {
+					this->showPlayer1CardsOnPlayer2(i_player, i_player2);
+				}
 			}
+			//for (int i_player2 : this->m_calledPlayersIndex) {
+			//	if (i_player != i_player2) {
+			//	}
+			//}
 		}
 	}
 	//开始按键出现
+	for (int i_player = 0; i_player < (int)this->m_players.size(); ++i_player) {
+		if (this->m_players[i_player].getPlayerType() == playerType::Looker&&this->m_players[i_player].getChip() > 0) {
+			this->m_players[i_player].setPlayerType(playerType::OnSitePlayer);	//在场的looker，有钱的变为onsite
+		}
+	}
 	this->showAllBegin();
 }
 
@@ -445,7 +460,8 @@ void game::finishThisRound() {
 bool game::nowPlayerRender() {
 	const int nowPlayerIndex = this->getNowPlayerIndex();
 	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
-	this->hidePlayerActionMessage(nowPlayerIndex);		//应该单独拿出去作为一个函数
+	//this->hidePlayerActionMessage(nowPlayerIndex);		//应该单独拿出去作为一个函数
+	this->showPlayerMessage(nowPlayerIndex, "玩家行动中...");	//显示当前行动玩家
 
 	if (nowPlayer.hasAllin()) {
 		this->afterPlayerAction();
@@ -471,7 +487,6 @@ bool game::nowPlayerRender() {
 bool game::begin() {
 	//先计算是不是所有玩家都准备了
 	const int numOfPlayer = this->getNumOfPlayers();
-	this->m_readyNumOfPlayer++;
 	if (this->m_readyNumOfPlayer < numOfPlayer) {
 		return false;
 	}
@@ -479,9 +494,9 @@ bool game::begin() {
 	//this->hideBegin();
 	this->m_calledPlayersIndex.clear();
 	for (int playerIndex = 0; playerIndex < maxNumOfPlayers; ++playerIndex) {
-		if (this->m_players[playerIndex].getPlayerType() == playerType::Looker && this->m_players[playerIndex].getChip() > 0) {
-			this->m_players[playerIndex].setPlayerType(playerType::OnSitePlayer);	//有钱的旁观者上场
-		}
+		//if (this->m_players[playerIndex].getPlayerType() == playerType::Looker && this->m_players[playerIndex].getChip() > 0) {
+		//	this->m_players[playerIndex].setPlayerType(playerType::OnSitePlayer);	//有钱的旁观者上场
+		//}
 		if (this->m_players[playerIndex].getPlayerType() == playerType::OnSitePlayer) {
 			this->m_calledPlayersIndex.insert(playerIndex);
 		}

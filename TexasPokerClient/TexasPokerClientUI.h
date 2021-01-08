@@ -12,6 +12,7 @@
 #include "qlabel.h"
 #include "qapplication.h"
 #include "qmessagebox.h"
+#include "qpixmap.h"
 #include <string>
 
 #include "game.h"
@@ -118,9 +119,11 @@ private:
 	QLabel *pot;
 	QPushButton *begin;			//有吗
 	//连接相关
+	QLineEdit *m_name;
 	QTcpSocket *m_tcpClient;
 	QPushButton *m_connect;
 	QLineEdit *m_address;
+	QLineEdit *m_port;
 	//防止粘包
 	QByteArray m_buffer;
 	int m_headLen;
@@ -177,4 +180,6 @@ public slots:
 	void clientReady();
 	void readData();
 	void disconnectTcp();
+	void aboutSlot();
+	void aboutCardTypeSlot();
 };

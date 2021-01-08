@@ -21,19 +21,50 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 	statusBar->setObjectName(QStringLiteral("statusBar"));
 	this->setStatusBar(statusBar);
 
-	m_arrayClient.clear();
+	QIcon icon;
+	icon.addFile(QStringLiteral("image/tubiao/poker_window_tubiao.ico"), QSize(), QIcon::Normal, QIcon::Off);
+	this->setWindowIcon(icon);
+
+	//设定端口号
+	m_setPort = new QPushButton(centralWidget);
+	m_setPort->setObjectName(QStringLiteral("setPort"));
+	m_setPort->setGeometry(QRect(500, 370, 100, 30));
+	m_setPort->raise();
+	m_setPort->setText(QStringLiteral("设置端口"));
+	m_setPort->show();
+
+	m_port = new QLineEdit(centralWidget);
+	m_port->setObjectName(QStringLiteral("port"));
+	m_port->setGeometry(QRect(500, 300, 100, 30));
+	m_port->raise();
+	m_port->setText(QStringLiteral("6060"));
+	m_port->show();
+
+	m_portDisplay = new QLabel(centralWidget);
+	m_portDisplay->setObjectName(QStringLiteral("portDisplay"));
+	m_portDisplay->setGeometry(QRect(500, 230, 150, 31));
+	m_portDisplay->setTextFormat(Qt::AutoText);
+	m_portDisplay->setScaledContents(false);
+	//m_portDisplay->setAlignment(Qt::AlignCenter);
+	m_portDisplay->setText(QStringLiteral("端口号为："));
+	m_portDisplay->raise();
+	m_portDisplay->show();
+
 	m_arrayClient = vector<QTcpSocket*>(game::maxNumOfPlayers, nullptr);
 
 	m_buffers = vector<QByteArray>(game::maxNumOfPlayers);
-	for (auto buffer : m_buffers)buffer.clear();
+	for (auto& buffer : m_buffers)buffer.clear();
 	m_headLens = vector<int>(game::maxNumOfPlayers, 0);
+	m_SocketMap = map<QTcpSocket*, int>();
 	m_SocketMap.clear();
 
 	m_tcpServer = new QTcpServer(this);
-	QString hostAddress = QNetworkInterface().allAddresses().at(1).toString();
-	quint16 port = 6060;
-	m_tcpServer->listen(QHostAddress::Any, port);
 	
+	/*QString hostAddress = QNetworkInterface().allAddresses().at(1).toString();*/
+	//quint16 port = 6060;
+	//m_tcpServer->listen(QHostAddress::Any, port);
+	
+	connect(m_setPort, SIGNAL(clicked()), this, SLOT(setPort()));
 	connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(newConnectionSlot()));
 }
 
@@ -68,7 +99,15 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 	}
 	else if (receivedCommand&tcpCommandToServer::playerReadyCommand) {	//命令from的玩家ready了
 		this->showPlayerActionMessage(fromPlayerIndex, "准备！");
+		this->m_game->addNumOfReadyPlayer();							//ready人数加一，从begin中提出来了
 		this->m_game->begin();
+	}
+	else if (receivedCommand&tcpCommandToServer::setPlayerNameCommand) {
+		const string playerName = dataArray.toStdString();
+		if (playerName != "姓名："&&playerName != "姓名") {			//不让起的名字，可以考虑给client返回提示
+			this->m_game->setPlayerName(fromPlayerIndex, playerName);
+			this->showPlayerName(fromPlayerIndex, playerName);
+		}
 	}
 }
 
@@ -285,9 +324,22 @@ void emptyServerUI::newConnectionSlot() {
 	commandAndDataToClient setClientIndex(tcpCommandToClient::setClientPlayerIndex, addPlayerIndex);
 	currentClient->write(setClientIndex.getTcpSend());
 
+	vector<player> const& playersArray = this->m_game->getPlayers();
+	//如果游戏已经开始
+	if (this->m_game->getGameHasStarted()) {
+		for (int i = 0; i < (int)playersArray.size(); ++i) {
+			if (playersArray[i].getPlayerType() != playerType::Empty) {
+				this->m_game->showPlayerName(i);
+				this->m_game->showPlayerChip(i);
+			}
+		}
+		this->showCommonCards(this->m_game->getCommonCards());
+		this->m_game->showOthersCardBackOnPlayerIndex(addPlayerIndex);	//渲染公共牌和牌背面在旁观者的桌上，问题在于信息显示不了
+		return;
+	}
+
 	//然后渲染在场玩家
 	//新玩家进入后，已准备的应当取消准备
-	vector<player> const& playersArray = this->m_game->getPlayers();
 	for (int i = 0; i < (int)playersArray.size(); ++i) {
 		if (playersArray[i].getPlayerType() != playerType::Empty) {
 			this->m_game->showPlayerName(i);
@@ -357,6 +409,25 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 	this->m_arrayClient[disconnectPlayerIndex] = nullptr;
 	this->m_buffers[disconnectPlayerIndex].clear();
 	this->m_headLens[disconnectPlayerIndex] = 0;
+
+	if (this->m_SocketMap.size() < 1) {		//少于1人则服务器退出
+		QApplication::exit();
+	}
+	//如果游戏没开始
+	if (!this->m_game->getGameHasStarted()) {
+		this->m_game->begin();
+	}
+	
+}
+
+void emptyServerUI::setPort()
+{
+	qint16 port = m_port->text().toInt();
+	m_tcpServer->listen(QHostAddress::Any, port);	//设置监听端口
+	//显示更新
+	m_port->hide();
+	m_setPort->hide();
+	m_portDisplay->setText(QStringLiteral("端口号为：") + QString::number(port));
 }
 
 void emptyServerUI::closeEvent(QCloseEvent *e) {

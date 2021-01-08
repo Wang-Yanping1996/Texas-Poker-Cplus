@@ -180,6 +180,7 @@ public:
 	set<int> const& getCalledPlayersIndex()const { return this->m_calledPlayersIndex; };
 	virUI* getVirUIPoint()const { return this->m_ui; };
 	int getNumOfReadyPlayer()const { return this->m_readyNumOfPlayer; };
+	void addNumOfReadyPlayer() { this->m_readyNumOfPlayer++; };
 	void clearNumOfReadyPlayer() { this->m_readyNumOfPlayer = 0; };
 
 	gameRound updateGameRound();
@@ -188,6 +189,7 @@ public:
 	void addToPot(const int addMoney) { this->m_pot += addMoney; };		//把money加入底池
 	
 	void setGameID(string gameID) { this->m_gameID = gameID; };
+	void setPlayerName(const int playerIndex, string const& playerName) { this->m_players[playerIndex].setName(playerName); };
 	void clearCommonCards() { this->m_commonCards.clear(); };
 	void updatePots();		//更新底池与边池
 	void clearPot() { this->m_pot = 0; };

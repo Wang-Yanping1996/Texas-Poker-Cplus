@@ -117,6 +117,12 @@ commandAndDataToServer::commandAndDataToServer(tcpCommandToServer command, int n
 	m_data = m_data.append(intTo4Bytes(num));
 }
 
+commandAndDataToServer::commandAndDataToServer(tcpCommandToServer command, string const data)
+{
+	m_command = intTo4Bytes((int)command);
+	m_data = QByteArray::fromStdString(data);
+}
+
 QByteArray commandAndDataToServer::getTcpSend() const
 {
 	QByteArray body = m_command;

@@ -56,7 +56,8 @@ enum tcpCommandToServer {
 	nowPlayerCallCommand = 0x00000008,
 
 	nowPlayerFoldCommand = 0x00000010,
-	playerReadyCommand = 0x00000020
+	playerReadyCommand = 0x00000020,
+	setPlayerNameCommand = 0x00000040
 };
 class commandAndDataToClient {
 public:
@@ -90,6 +91,7 @@ public:
 	commandAndDataToServer();
 	commandAndDataToServer(tcpCommandToServer command);
 	commandAndDataToServer(tcpCommandToServer command, int num);
+	commandAndDataToServer(tcpCommandToServer command, string const data);
 
 	QByteArray getTcpSend()const;
 

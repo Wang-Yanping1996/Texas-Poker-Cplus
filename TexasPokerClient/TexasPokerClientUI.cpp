@@ -43,7 +43,7 @@ playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex
 	playerName->setGeometry(QRect(0 + x, 0 + y, 100, 31));
 	playerName->setFont(font1);
 	playerName->setLayoutDirection(Qt::LeftToRight);
-	playerName->setAlignment(Qt::AlignCenter);
+	//playerName->setAlignment(Qt::AlignCenter);
 
 	playerChip = new QLabel(centralWidget);
 	playerChip->setObjectName(QStringLiteral("chip"));
@@ -152,6 +152,8 @@ void playerClient::hideSidePot() const
 TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	:QMainWindow(parent)
 {
+
+
 	setWindowTitle(QStringLiteral("德州扑克"));
 	if (this->objectName().isEmpty())
 		this->setObjectName(QStringLiteral("TexasPokerNewClass"));
@@ -169,12 +171,21 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	statusBar->setObjectName(QStringLiteral("statusBar"));
 	this->setStatusBar(statusBar);
 
+	QIcon icon;
+	icon.addFile(QStringLiteral("image/tubiao/poker_window_tubiao.ico"), QSize(), QIcon::Normal, QIcon::Off);
+	this->setWindowIcon(icon);
+
 	QMenu* helpMenu = menuBar->addMenu(QStringLiteral("帮助(&H)"));
 
 	QAction* aboutAct = new QAction(QIcon(QStringLiteral("image/tubiao/about.png")), QStringLiteral("关于..."), this);
 	aboutAct->setStatusTip(QStringLiteral("关于"));
-	connect(aboutAct, SIGNAL(triggered()), this, SLOT(about()));
+	connect(aboutAct, SIGNAL(triggered()), this, SLOT(aboutSlot()));
 	helpMenu->addAction(aboutAct);
+
+	QAction* aboutCardType = new QAction(QIcon(QStringLiteral("image/tubiao/about.png")), QStringLiteral("牌型"), this);
+	aboutCardType->setStatusTip(QStringLiteral("关于"));
+	connect(aboutCardType, SIGNAL(triggered()), this, SLOT(aboutCardTypeSlot()));
+	helpMenu->addAction(aboutCardType);
 
 	for (int i_card = 0; i_card < game::maxNumOfCommonCards; ++i_card) {
 		commonCards[i_card] = new QLabel(centralWidget);
@@ -297,6 +308,20 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	m_address->raise();
 	m_address->setText(QStringLiteral("10.12.222.73"));
 	m_address->show();
+
+	m_port = new QLineEdit(centralWidget);
+	m_port->setObjectName(QStringLiteral("port"));
+	m_port->setGeometry(QRect(680, 300, 40, 30));
+	m_port->raise();
+	m_port->setText(QStringLiteral("6060"));
+	m_port->show();
+
+	m_name = new QLineEdit(centralWidget);
+	m_name->setObjectName(QStringLiteral("playerName"));
+	m_name->setGeometry(QRect(550, 230, 100, 30));
+	m_name->raise();
+	m_name->setText(QStringLiteral("姓名："));
+	m_name->show();
 
 	m_tcpClient = new QTcpSocket(this);
 	m_tcpClient->abort();
@@ -571,23 +596,28 @@ void TexasPokerClientUI::showClientPlayerRaiseAction(const int minRaiseMoney, co
 	this->raiseMoney->setValue(minRaiseMoney);					//初值设为最小值
 	this->raiseMoney->setSingleStep(game::bigBind);				//设置最少一次改变多少
 	this->raiseMoney->show();
+	//this->hidePlayerActionMessage(this->m_clientPlayerIndex);
 }
 void TexasPokerClientUI::showClientPlayerAllinAction(const int allinMoney) const
 {
 	this->allin->show();
 	this->raiseMoney->setRange(allinMoney, allinMoney);
 	this->raiseMoney->show();
+	//this->hidePlayerActionMessage(this->m_clientPlayerIndex);
 }
 void TexasPokerClientUI::showClientPlayerCheckAction()const {
 	this->check->show();
+	//this->hidePlayerActionMessage(this->m_clientPlayerIndex);
 }
 void TexasPokerClientUI::showClientPlayerCallAction(const int callMoney)const {
 	QString showText = QStringLiteral("跟注:") + QString::number(callMoney);
 	this->call->setText(showText);
 	this->call->show();
+	//this->hidePlayerActionMessage(this->m_clientPlayerIndex);
 }
 void TexasPokerClientUI::showClientPlayerFoldAction()const {
 	this->fold->show();
+	this->hidePlayerActionMessage(this->m_clientPlayerIndex);
 }
 
 void TexasPokerClientUI::hideClientPlayerRaiseAction() const {
@@ -617,7 +647,9 @@ void TexasPokerClientUI::connectTcp() {
 		return;
 	}
 	//auto a = testAddress.toIPv4Address();
-	quint16 hostPort = 6060;
+	QString receivedPort = m_port->text();
+	quint16 hostPort = receivedPort.toInt();
+	//quint16 hostPort = 6060;
 	m_tcpClient->connectToHost(honstAddress, hostPort);
 	const bool connected = m_tcpClient->waitForConnected(1000);
 	if (!connected) {
@@ -625,10 +657,15 @@ void TexasPokerClientUI::connectTcp() {
 		return;
 	}
 	//连接成功，出现自己名字和开始按键，应该由服务器发送
-	bool flag = connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	
+	connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	
+	string playerName(m_name->text().toLocal8Bit());	//防止乱码
+	commandAndDataToServer toSend(tcpCommandToServer::setPlayerNameCommand, playerName);
+	this->sendCommandAndDataToServer(toSend);	//设置自己的名字
 	//关闭ip地址框和connect
 	this->m_address->hide();
+	this->m_port->hide();
 	this->m_connect->hide();
+	this->m_name->hide();
 }
 void TexasPokerClientUI::nowPlayerRaise()
 {
@@ -698,3 +735,45 @@ void TexasPokerClientUI::disconnectTcp() {
 	//this->close();
 	QApplication::exit();
 }
+
+
+void TexasPokerClientUI::aboutSlot() {
+	QMessageBox::about(this
+		, QStringLiteral("德州扑克")
+		, QStringLiteral("<p>Version 1.0<p>Copyright &copy; 2021 <b>wyp zju</b>")
+	);
+}
+
+void TexasPokerClientUI::aboutCardTypeSlot() {
+	QMainWindow *newWindow = new QMainWindow(this);
+
+	newWindow->setWindowTitle(QStringLiteral("牌型"));
+	if (newWindow->objectName().isEmpty())
+		newWindow->setObjectName(QStringLiteral("牌型"));
+	newWindow->resize(700, 600);
+	menuBar = new QMenuBar(newWindow);
+	menuBar->setObjectName(QStringLiteral("menuBar"));
+	newWindow->setMenuBar(menuBar);
+	mainToolBar = new QToolBar(newWindow);
+	mainToolBar->setObjectName(QStringLiteral("mainToolBar"));
+	newWindow->addToolBar(mainToolBar);
+	centralWidget = new QWidget(newWindow);
+	centralWidget->setObjectName(QStringLiteral("centralWidget"));
+	newWindow->setCentralWidget(centralWidget);
+	statusBar = new QStatusBar(newWindow);
+	statusBar->setObjectName(QStringLiteral("statusBar"));
+	newWindow->setStatusBar(statusBar);
+	
+	QPushButton * test = new QPushButton(centralWidget);
+	test->show();
+
+	QLabel *imageShow = new QLabel(centralWidget);
+	QString path = "image/tubiao/cardType.jpg";
+	imageShow->setPixmap(path);
+	imageShow->raise();
+	imageShow->show();
+	
+	newWindow->show();
+
+}
+

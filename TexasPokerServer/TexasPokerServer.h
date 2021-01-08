@@ -9,6 +9,9 @@
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/qmessagebox.h>
+#include <QtWidgets/qlineedit.h>
+#include <QtWidgets/qlabel.h>
+#include <QtWidgets/qapplication.h>
 #include "tcpCommand.h"
 //空窗口ui
 class emptyServerUI : public QMainWindow, public virUI {
@@ -72,6 +75,10 @@ private:
 	vector<int> m_headLens;
 	//分离不同client的消息
 	map<QTcpSocket*, int> m_SocketMap;
+	//设定监听端口号
+	QPushButton *m_setPort;
+	QLineEdit *m_port;
+	QLabel *m_portDisplay;
 	//原来就有的
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;
@@ -81,6 +88,7 @@ private slots:
 	void newConnectionSlot();
 	void readData();
 	void disconnectionSlot();
+	void setPort();
 	void closeEvent(QCloseEvent * e);
 };
 
