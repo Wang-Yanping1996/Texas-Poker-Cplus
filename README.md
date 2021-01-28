@@ -1,5 +1,6 @@
 # Texas-Poker-Cplus
 c++，Qt练手写的德州扑克，包括客户端和服务器端，很粗浅，界面也简陋，内部也乱七八糟的
+onlinePlatform 分支
 
 Qt路径可能需要自行配置，目前我的目录是E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include和E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\lib，版本是5.9.4
 
