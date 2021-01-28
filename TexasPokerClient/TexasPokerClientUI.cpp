@@ -648,7 +648,7 @@ void TexasPokerClientUI::connectTcp() {
 	}
 	//auto a = testAddress.toIPv4Address();
 	QString receivedPort = m_port->text();
-	quint16 hostPort = receivedPort.toInt();
+	quint32 hostPort = receivedPort.toInt();
 	//quint16 hostPort = 6060;
 	m_tcpClient->connectToHost(honstAddress, hostPort);
 	const bool connected = m_tcpClient->waitForConnected(1000);

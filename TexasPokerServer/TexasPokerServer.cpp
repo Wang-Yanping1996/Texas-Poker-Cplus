@@ -422,7 +422,8 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 
 void emptyServerUI::setPort()
 {
-	qint16 port = m_port->text().toInt();
+	int aaa = m_port->text().toInt();
+	qint32 port = m_port->text().toInt();
 	m_tcpServer->listen(QHostAddress::Any, port);	//设置监听端口
 	//显示更新
 	m_port->hide();
