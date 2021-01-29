@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 		playerArray.push_back(newPlayer);
 	}
 
-	game myGame = game("game1", playerArray, {}, 0, {}, 0, cardHeap(), ErrorRound, -1, -1, rand() % game::maxNumOfPlayers, {}, nullptr);
+	game myGame = game("game1", playerArray, {}, 0, {}, 0, cardHeap(), ErrorRound, -1, -1, rand() % game::maxNumOfPlayers, {}, 0, false, nullptr);
 	singleGameWindow w;
 	//Áª½á
 	myGame.setVirUIPoint(&w);

@@ -7,12 +7,13 @@
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/qlineedit.h>
-#include "qhostaddress.h"
-#include "qtcpsocket.h"
-#include "qlabel.h"
-#include "qapplication.h"
-#include "qmessagebox.h"
-#include "qpixmap.h"
+#include <QtNetwork/qhostaddress.h>
+#include <QtNetwork/qtcpsocket.h>
+#include <QtWidgets/qlabel.h>
+#include <QtWidgets/qapplication.h>
+#include <QtWidgets/qmessagebox.h>
+#include <QtGui/qpixmap.h>
+
 #include <string>
 
 #include "game.h"

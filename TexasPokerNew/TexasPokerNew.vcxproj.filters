@@ -41,7 +41,7 @@
     <ClCompile Include="..\src\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\singleGameUI.cpp">
+    <ClCompile Include="singleGameUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -70,7 +70,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="image\tubiao\poker_window_tubiao.ico">
+    <Image Include="image\tubiao\poker_exe_tubiao.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

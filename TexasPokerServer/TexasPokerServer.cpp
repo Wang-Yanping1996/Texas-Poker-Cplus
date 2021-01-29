@@ -69,7 +69,7 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 }
 
 
-
+//分支应该用==写
 void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerIndex)
 {
 	QByteArray commandArray = received.left(commandAndDataToServer::byteOfInt);

@@ -46,7 +46,12 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\vs2015\WorkSpace\TexasPokerNew\include;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
@@ -89,11 +94,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="singleGameUI.cpp" />
     <QtRcc Include="TexasPokerNew.qrc" />
     <ClCompile Include="..\src\cardHeap.cpp" />
     <ClCompile Include="..\src\game.cpp" />
     <ClCompile Include="..\src\player.cpp" />
-    <ClCompile Include="..\src\singleGameUI.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -107,7 +112,7 @@
     <ResourceCompile Include="TexasPokerNew.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="image\tubiao\poker_window_tubiao.ico" />
+    <Image Include="image\tubiao\poker_exe_tubiao.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

@@ -562,5 +562,6 @@ void singleGameWindow::nowPlayerFold() {
 	this->m_game->nowPlayerFold();
 }
 void singleGameWindow::gameBegin() {
+	this->m_game->addNumOfReadyPlayer();
 	this->m_game->begin();
 }

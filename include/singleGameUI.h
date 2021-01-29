@@ -149,6 +149,10 @@ public:
 	virtual void hidePlayerCheckAction(const int nowPlayerIndex)const;
 	virtual void hidePlayerCallAction(const int nowPlayerIndex)const;
 	virtual void hidePlayerFoldAction(const int nowPlayerIndex)const;
+
+	//不需要在singleGame中实现
+	virtual void showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const& handCards)const {};
+	virtual void showPlayer1CardBackOnPlayer2(const int player1Index, const int player2Index)const {};
 };
 
 

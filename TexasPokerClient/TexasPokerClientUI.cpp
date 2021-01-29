@@ -339,6 +339,7 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	connect(fold, SIGNAL(clicked()), this, SLOT(nowPlayerFold()));
 }
 
+//分支应该写成==判断
 //好累。。。
 void TexasPokerClientUI::analyzeCommand(QByteArray received)
 {

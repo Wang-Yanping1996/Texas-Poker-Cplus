@@ -46,7 +46,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include\QtNetwork;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;D:\vs2015\WorkSpace\TexasPokerNew\TexasPokerNew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Qt5Networkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -54,7 +54,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include\QtNetwork;E:\Qt\Qt5.9.4\5.9.4\msvc2015_64\include;D:\vs2015\WorkSpace\TexasPokerNew\TexasPokerNew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Qt5Network.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -108,15 +108,13 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\cardHeap.h" />
-    <ClInclude Include="..\include\tcpCommand.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="TexasPokerClient.rc" />
+    <Image Include="image\tubiao\poker_exe_tubiao.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="image\tubiao\poker_exe_tubiao.ico" />
+    <ResourceCompile Include="TexasPokerClient.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
