@@ -12,6 +12,7 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qapplication.h>
+
 #include "tcpCommand.h"
 //空窗口ui
 class emptyServerUI : public QMainWindow, public virUI {
@@ -35,6 +36,7 @@ public:
 	virtual void hidePot()const;
 	virtual void showBegin(const int playerIndex)const;
 	virtual void hideBegin(const int playerIndex)const;
+	virtual void showDealer() const;
 
 	//玩家相关
 	virtual void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const;	//显示玩家自身的牌
@@ -69,7 +71,7 @@ private:
 
 	vector<QTcpSocket*> m_arrayClient;
 	QTcpServer *m_tcpServer;
-
+	
 	//防粘包
 	vector<QByteArray> m_buffers;
 	vector<int> m_headLens;

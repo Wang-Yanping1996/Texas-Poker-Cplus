@@ -7,7 +7,7 @@ player::player(player const & another) {
 	this->m_chip = another.m_chip;
 	this->m_nowBet = another.m_nowBet;
 	this->m_winMoney = another.m_winMoney;
-	this->m_IP = another.m_IP;
+	this->m_macAddress = another.m_macAddress;
 	this->m_cardTypeAndPoint = another.m_cardTypeAndPoint;
 	this->m_playerAction = another.m_playerAction;
 }
@@ -20,7 +20,7 @@ player & player::operator=(player const & another)
 	this->m_chip = another.m_chip;
 	this->m_nowBet = another.m_nowBet;
 	this->m_winMoney = another.m_winMoney;
-	this->m_IP = another.m_IP;
+	this->m_macAddress = another.m_macAddress;
 	this->m_cardTypeAndPoint = another.m_cardTypeAndPoint;
 	this->m_playerAction = another.m_playerAction;
 	return *this;

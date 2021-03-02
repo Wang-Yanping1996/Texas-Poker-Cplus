@@ -4,12 +4,16 @@
 #include <string>
 #include <set>
 #include <map>
+#include <unordered_map>
+#include <QtGui/qstandarditemmodel.h>
 
 enum gameRound { ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End };
 
 //接口类,包含了UI应该实现的方法，也就是各部件的show和hide
 class virUI {
 public:
+	virtual void showDealer()const = 0;
+
 	virtual void showCommonCards(vector<card> const& commonCards)const = 0;
 	virtual void hideCommonCards()const = 0;
 	virtual void showRound(gameRound nowRound)const = 0;
@@ -78,6 +82,7 @@ public:
 	static const int maxNumOfCommonCards = 5;
 	static const int smallBind = 1;
 	static const int bigBind = 2;
+	static const int initChip = 200;				//初始筹码
 	int combineMap[21][5] = { { 0,1,2,3,4 },		//排列组合表，感觉应该换个位置
 						{ 0,1,2,3,5 },
 						{ 0,1,2,3,6 },
@@ -105,7 +110,7 @@ private:
 	vector<player> m_players;		//游戏中的玩家
 	vector<card> m_commonCards;		//公共牌
 	int m_pot;						//底池
-	vector<sidePot> m_sidePots;	//边池 分层
+	vector<sidePot> m_sidePots;		//边池 分层
 	int m_minBet;					//本轮最小下注
 	cardHeap m_cardHeap;			//牌堆
 	gameRound m_round;				//回合
@@ -116,6 +121,9 @@ private:
 	int m_readyNumOfPlayer;			//准备好的人数
 	bool m_hasStarted;				//是否游戏中
 	virUI* m_ui;
+	//计分表添加
+	unordered_map<string, int> m_macAddressToScoreChartIndex;
+	QStandardItemModel* m_scoreChart;	//各玩家得分记录
 public:
 	game(string gameID = "No ID",
 		vector<player> players = vector<player>(maxNumOfPlayers),
@@ -131,7 +139,9 @@ public:
 		set<int> calledPlayersIndex = {},
 		int readyNumOfPlayer = 0,
 		bool hasStarted = false,
-		virUI* ui = nullptr
+		virUI* ui = nullptr,
+		unordered_map<string, int> macAddressToScoreChartIndex = {},
+		QStandardItemModel* scoreChart = new QStandardItemModel()
 	) :m_gameID(gameID),
 		m_players(players),
 		m_commonCards(commonCards),
@@ -146,14 +156,23 @@ public:
 		m_calledPlayersIndex(calledPlayersIndex),
 		m_readyNumOfPlayer(readyNumOfPlayer),
 		m_hasStarted(hasStarted),
-		m_ui(ui){
-		m_commonCards.reserve(maxNumOfCommonCards);	//保留空间
-		m_sidePots.reserve(maxNumOfPlayers);			//最多玩家数个边池
+		m_ui(ui),
+		m_macAddressToScoreChartIndex(macAddressToScoreChartIndex),
+		m_scoreChart(scoreChart)
+	{
+		m_commonCards.reserve(maxNumOfCommonCards);				//保留空间
+		m_sidePots.reserve(maxNumOfPlayers);					//最多玩家数个边池
+
+		m_scoreChart->setHorizontalHeaderLabels({ QStringLiteral("玩家名"), QStringLiteral("总带入"), QStringLiteral("当前总筹码"), QStringLiteral("场上筹码"), QStringLiteral("净胜") });
+		m_macAddressToScoreChartIndex.clear();
 	};
 	~game() = default;
 	
 	//get玩家
 	string getGameID() const { return this->m_gameID; };
+	string getPlayerMacAddress(const int playerIndex) { return this->m_players[playerIndex].getMacAddress(); };
+	unordered_map<string, int>& getMacAddressToScoreChartIndex() { return this->m_macAddressToScoreChartIndex; };
+	QStandardItemModel* getScoreChart() { return this->m_scoreChart; };	
 	vector<player> const& getPlayers()const { return this->m_players; };
 	player& getPlayer(int playerIndex) { return this->m_players[playerIndex]; };
 	player const& getPlayer(int playerIndex)const { return this->m_players[playerIndex]; };
@@ -190,6 +209,7 @@ public:
 	
 	void setGameID(string gameID) { this->m_gameID = gameID; };
 	void setPlayerName(const int playerIndex, string const& playerName) { this->m_players[playerIndex].setName(playerName); };
+	void setPlayerMacAddress(const int playerIndex, string const& macAddress) { this->m_players[playerIndex].setMacAddress(macAddress); };
 	void clearCommonCards() { this->m_commonCards.clear(); };
 	void updatePots();		//更新底池与边池
 	void clearPot() { this->m_pot = 0; };
@@ -209,7 +229,7 @@ public:
 	void setNowPlayerIndex(const int nowPlayerIndex) { this->m_nowPlayerIndex = nowPlayerIndex; };
 	void setEndPlayerIndex(const int endPlayerIndex) { this->m_endPlayerIndex = endPlayerIndex; };
 	void updateDealer() { int nextDealer = this->getNextCalledPlayerIndex(this->m_dealer);	this->m_dealer = nextDealer; };	//相等怎么办？要不要判断？
-
+	void showDealer() { this->m_ui->showDealer(); };
 	void clearCalledPlayersIndex() { this->m_calledPlayersIndex.clear(); };
 
 	//五个必须实现的函数
@@ -314,7 +334,7 @@ public:
 	void hideAllBegin();
 
 	void showGameEnd();
+	void updatePlayerScore(const int playerIndex);				//正常更新计分表
+	void updateEscapedPlayerScore(const int playerIndex);		//更新逃跑玩家的计分表
 };
-
-
 

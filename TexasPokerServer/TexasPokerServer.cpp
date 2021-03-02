@@ -63,7 +63,7 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 	/*QString hostAddress = QNetworkInterface().allAddresses().at(1).toString();*/
 	//quint16 port = 6060;
 	//m_tcpServer->listen(QHostAddress::Any, port);
-	
+
 	connect(m_setPort, SIGNAL(clicked()), this, SLOT(setPort()));
 	connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(newConnectionSlot()));
 }
@@ -78,36 +78,89 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 
 	tcpCommandToServer receivedCommand = (tcpCommandToServer)bytes4ToInt(commandArray);
 
-	if (receivedCommand&tcpCommandToServer::noCommandToServer) {
+	if (receivedCommand == tcpCommandToServer::noCommandToServer) {
 		return;
 	}
-	else if (receivedCommand&tcpCommandToServer::nowPlayerRaiseCommand) {
+	else if (receivedCommand == tcpCommandToServer::nowPlayerRaiseCommand) {
 		const int raiseTo = bytes4ToInt(dataArray);
 		this->m_game->nowPlayerRaise(raiseTo);
 	}
-	else if (receivedCommand&tcpCommandToServer::nowPlayerAllinCommand) {
+	else if (receivedCommand == tcpCommandToServer::nowPlayerAllinCommand) {
 		this->m_game->nowPlayerAllin();
 	}
-	else if (receivedCommand&tcpCommandToServer::nowPlayerCheckCommand) {
+	else if (receivedCommand == tcpCommandToServer::nowPlayerCheckCommand) {
 		this->m_game->nowPlayerCheck();
 	}
-	else if (receivedCommand&tcpCommandToServer::nowPlayerCallCommand) {
+	else if (receivedCommand == tcpCommandToServer::nowPlayerCallCommand) {
 		this->m_game->nowPlayerCall();
 	}
-	else if (receivedCommand&tcpCommandToServer::nowPlayerFoldCommand) {
+	else if (receivedCommand == tcpCommandToServer::nowPlayerFoldCommand) {
 		this->m_game->nowPlayerFold();
 	}
-	else if (receivedCommand&tcpCommandToServer::playerReadyCommand) {	//命令from的玩家ready了
+	else if (receivedCommand == tcpCommandToServer::playerReadyCommand) {	//命令from的玩家ready了
 		this->showPlayerActionMessage(fromPlayerIndex, "准备！");
-		this->m_game->addNumOfReadyPlayer();							//ready人数加一，从begin中提出来了
+		this->m_game->addNumOfReadyPlayer();								//ready人数加一，从begin中提出来了
 		this->m_game->begin();
 	}
-	else if (receivedCommand&tcpCommandToServer::setPlayerNameCommand) {
+	else if (receivedCommand == tcpCommandToServer::setPlayerNameCommand) {
 		const string playerName = dataArray.toStdString();
-		if (playerName != "姓名："&&playerName != "姓名") {			//不让起的名字，可以考虑给client返回提示
+		if (playerName != "姓名："&&playerName != "姓名") {					//不让起的名字，可以考虑给client返回提示
 			this->m_game->setPlayerName(fromPlayerIndex, playerName);
 			this->showPlayerName(fromPlayerIndex, playerName);
 		}
+	}
+	else if (receivedCommand == tcpCommandToServer::setClientMacAddressCommand) {
+		const string nowClientMacAddress = dataArray.toStdString();
+		for (int i = 0; i < game::maxNumOfPlayers; i++) {
+			player const& curPlayer = this->m_game->getPlayer(i);
+			if (curPlayer.getPlayerType() != playerType::Empty && curPlayer.getMacAddress() == nowClientMacAddress) {	//同一mac连了两个client到server
+				//在客户端处理吧
+			}
+		}
+
+		this->m_game->setPlayerMacAddress(fromPlayerIndex, nowClientMacAddress);
+		unordered_map<string, int>& macAddressToScoreChartIndex = this->m_game->getMacAddressToScoreChartIndex();
+		QStandardItemModel* scoreChart = this->m_game->getScoreChart();
+
+		if (macAddressToScoreChartIndex.find(nowClientMacAddress) == macAddressToScoreChartIndex.end()) {	//mac-得分表索引映射表中未找到当前mac地址
+			const int nowScoreChartRowCount = scoreChart->rowCount();
+			scoreChart->insertRow(nowScoreChartRowCount);
+			scoreChart->setItem(nowScoreChartRowCount, 1, new QStandardItem("0"));
+			scoreChart->setItem(nowScoreChartRowCount, 2, new QStandardItem("0"));
+			scoreChart->setItem(nowScoreChartRowCount, 3, new QStandardItem("0"));
+			scoreChart->setItem(nowScoreChartRowCount, 4, new QStandardItem("0"));
+
+			macAddressToScoreChartIndex[nowClientMacAddress] = nowScoreChartRowCount;	//索引表中插入该mac地址
+		}
+		const int clientScoreChartIndex = macAddressToScoreChartIndex[nowClientMacAddress];
+		const string clientPlayerName = this->m_game->getPlayer(fromPlayerIndex).getName();
+		
+		scoreChart->setItem(clientScoreChartIndex, 0, new QStandardItem(QString::fromLocal8Bit(clientPlayerName.data())));	//名字
+		int totalBuyIn = scoreChart->item(clientScoreChartIndex, 1)->text().toInt();
+		int totalChip = scoreChart->item(clientScoreChartIndex, 2)->text().toInt();
+		if (totalChip == 0) {
+			totalBuyIn += game::initChip;				//再一次buyIn
+			totalChip = game::initChip;
+		}
+		else if (totalChip > 0 && totalChip < game::initChip) {
+			totalBuyIn += game::initChip - totalChip;	//补差价
+			totalChip = game::initChip;
+		}
+		else if (totalChip >= game::initChip) {
+
+		}
+		int onTableChip = game::initChip;
+		int totalWin = totalChip - totalBuyIn;
+
+		scoreChart->setItem(clientScoreChartIndex, 1, new QStandardItem(QString::number(totalBuyIn)));						//总带入
+		scoreChart->setItem(clientScoreChartIndex, 2, new QStandardItem(QString::number(totalChip)));						//当前总筹码
+		scoreChart->setItem(clientScoreChartIndex, 3, new QStandardItem(QString::number(onTableChip)));						//带到桌上的筹码
+		scoreChart->setItem(clientScoreChartIndex, 4, new QStandardItem(QString::number(totalWin)));						//当前净胜
+	}
+	else if (receivedCommand == tcpCommandToServer::showScoreChartCommand) {
+		QStandardItemModel const* scoreChart = this->m_game->getScoreChart();
+		commandAndDataToClient toSend(tcpCommandToClient::sendScoreChartData, scoreChart);
+		this->sendCommandAndDataToPlayer(fromPlayerIndex, toSend);
 	}
 }
 
@@ -129,6 +182,11 @@ void emptyServerUI::sendCommandAndDataToAll(commandAndDataToClient toSend)const
 			toSendPlayerSocket->write(toSend.getTcpSend());	
 		}
 	}
+}
+
+void emptyServerUI::showDealer()const {
+	commandAndDataToClient toSend(tcpCommandToClient::showDealer, this->m_game->getDealer());
+	this->sendCommandAndDataToAll(toSend);
 }
 
 void emptyServerUI::showCommonCards(vector<card> const & commonCards) const

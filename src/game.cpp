@@ -79,9 +79,9 @@ int game::addNewPlayer(string const& playerName)
 	const int index = rand() % emptyPlayerIndex.size();
 	const int addPlayerIndex = emptyPlayerIndex[index];
 	if (this->m_hasStarted)	//游戏已开始，进入者为旁观者
-		this->m_players[addPlayerIndex] = player(playerType::Looker, playerName, { card(), card() }, 200);
+		this->m_players[addPlayerIndex] = player(playerType::Looker, playerName, { card(), card() }, this->initChip);
 	else					//游戏未开始，进入者直接上场
-		this->m_players[addPlayerIndex] = player(playerType::OnSitePlayer, playerName, { card(), card() }, 200);
+		this->m_players[addPlayerIndex] = player(playerType::OnSitePlayer, playerName, { card(), card() }, this->initChip);
 	return addPlayerIndex;
 }
 
@@ -209,11 +209,23 @@ void game::playerEscape(const int playerIndex)	//仿照fold处理
 		this->setEndPlayerIndex(newEndPlayerIndex);
 	}
 	player& escapedPlayer = this->getPlayer(playerIndex);
-	this->addToPot(escapedPlayer.getNowBet());		//已下注加入底池
+	this->addToPot(escapedPlayer.getNowBet());		//已下注加入底池		
+	this->updateEscapedPlayerScore(playerIndex);	//更新逃跑玩家的计分表
+
 	this->hidePlayerHandCards(playerIndex);			//隐藏手牌，已在fold中设置为错误
 	this->m_calledPlayersIndex.erase(playerIndex);	//从已call集合中删除
 
 	escapedPlayer = player();		//建立一个空player代替
+
+	if (this->m_calledPlayersIndex.size() <= 1) {	//没人了，结算
+		this->updatePots();										//更新底池与边池
+
+		this->settle();
+		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
+		this->showGameEnd();
+		this->setGameHasStarted(false);	//游戏结束，游戏状态设置为未开始
+		return;
+	}
 	//this->afterPlayerAction();	//不渲染了吧
 }
 void game::afterPlayerAction(){									//玩家行动后
@@ -437,7 +449,47 @@ void game::showGameEnd()
 	this->showAllBegin();
 }
 
+void game::updatePlayerScore(const int playerIndex) {
+	const string macAddress = this->getPlayerMacAddress(playerIndex);
+	auto iter = this->m_macAddressToScoreChartIndex.find(macAddress);
+	if (iter == this->m_macAddressToScoreChartIndex.end()) {		//没找到
+		this->m_ui->showPlayerActionMessage(this->getNowPlayerIndex(), "更新计分表失败");
+		return;
+	}
+	const int playerRow = iter->second;													//玩家在表中行号
+	const int playerChip = this->getPlayer(playerIndex).getChip();						//玩家当前桌上筹码
+	const int totalBuyIn = this->m_scoreChart->item(playerRow, 1)->text().toInt();		//玩家总买入
+	int totalChip = this->m_scoreChart->item(playerRow, 2)->text().toInt();				//玩家总筹码
+	const int onTableChip = this->m_scoreChart->item(playerRow, 3)->text().toInt();		//上次更新的，在桌上的筹码
 
+	const int modifiedChip = playerChip - onTableChip;									//当前桌上筹码，与上次桌上筹码之差
+	totalChip += modifiedChip;															//更新总筹码
+	const int totalWin = totalChip - totalBuyIn;										//更新总盈利
+	this->m_scoreChart->setItem(playerRow, 2, new QStandardItem(QString::number(totalChip)));
+	this->m_scoreChart->setItem(playerRow, 3, new QStandardItem(QString::number(playerChip)));
+	this->m_scoreChart->setItem(playerRow, 4, new QStandardItem(QString::number(totalWin)));
+}
+//与上面一样，只有桌上筹码修改不一样。。。
+void game::updateEscapedPlayerScore(const int playerIndex) {
+	const string macAddress = this->getPlayerMacAddress(playerIndex);
+	auto iter = this->m_macAddressToScoreChartIndex.find(macAddress);
+	if (iter == this->m_macAddressToScoreChartIndex.end()) {		//没找到
+		this->m_ui->showPlayerActionMessage(this->getNowPlayerIndex(), "更新计分表失败");
+		return;
+	}
+	const int playerRow = iter->second;													//玩家在表中行号
+	const int playerChip = this->getPlayer(playerIndex).getChip();						//玩家当前桌上筹码
+	const int totalBuyIn = this->m_scoreChart->item(playerRow, 1)->text().toInt();		//玩家总买入
+	int totalChip = this->m_scoreChart->item(playerRow, 2)->text().toInt();				//玩家总筹码
+	const int onTableChip = this->m_scoreChart->item(playerRow, 3)->text().toInt();		//上次更新的，在桌上的筹码
+
+	const int modifiedChip = playerChip - onTableChip;									//当前桌上筹码，与上次桌上筹码之差
+	totalChip += modifiedChip;															//更新总筹码
+	const int totalWin = totalChip - totalBuyIn;										//更新总盈利
+	this->m_scoreChart->setItem(playerRow, 2, new QStandardItem(QString::number(totalChip)));
+	this->m_scoreChart->setItem(playerRow, 3, new QStandardItem(QString::number(0)));	//桌上筹码改为0
+	this->m_scoreChart->setItem(playerRow, 4, new QStandardItem(QString::number(totalWin)));
+}
 void game::nowPlayerActionComplete() {
 	this->hideNowPlayerAllAction();		//隐藏当前玩家行动界面
 	this->showNowPlayerChip();			//显示当前玩家筹码信息
@@ -510,6 +562,8 @@ bool game::begin() {
 	this->m_round = Start;		//开始
 	this->setGameHasStarted(true);	//游戏状态设为开始
 	this->updateDealer();		//更新dealer
+	this->showDealer();			//在客户端显示dealer
+
 	//this->initPlayersState();	//初始化玩家状态
 	this->clearCommonCards();	//清空桌上的牌
 	this->clearPot();
@@ -653,6 +707,8 @@ void game::settle(){		//结算
 				this->playerWin(i);
 			else
 				this->playerLose(i);
+			//正常修改计分表
+			this->updatePlayerScore(i);
 		}
 	}
 }

@@ -13,11 +13,15 @@
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtGui/qpixmap.h>
-
-#include <string>
-
+#include <QtWidgets/qtableview.h>
+#include <QtWidgets/qheaderview.h>
 #include "game.h"
 #include "tcpCommand.h"
+
+#include <string>
+#include <winsock2.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
 
 QString getCardFileName(card const& c);
 vector<card> QByteArrayToCards(QByteArray const& qArray);
@@ -119,6 +123,7 @@ private:
 	QLabel *river;
 	QLabel *pot;
 	QPushButton *begin;			//有吗
+	QLabel *dealer;
 	//连接相关
 	QLineEdit *m_name;
 	QTcpSocket *m_tcpClient;
@@ -130,7 +135,12 @@ private:
 	int m_headLen;
 	//记录当前client玩家编号
 	int m_clientPlayerIndex;
+	
+	string macAddress;			//本机第一个mac地址
 public:
+	//获取第一个以太网卡mac地址
+	bool getMacByGetAdaptersInfo();
+
 	//tcp命令解析
 	void analyzeCommand(QByteArray received);
 	void sendCommandAndDataToServer(commandAndDataToServer toSend)const;
@@ -153,6 +163,7 @@ public:
 	void showPlayerChip(const int playerIndex, const int chip)const;
 	void showPlayerActionMessage(const int playerIndex, string const& actionMessage)const;
 	void showPlayerSidePot(const int playerIndex, const int money)const;
+	void showPlayerDealer(const int playerIndex)const;
 
 	void hidePlayerHandCards(const int playerIndex)const;
 	void hidePlayerName(const int playerIndex)const;
@@ -183,4 +194,5 @@ public slots:
 	void disconnectTcp();
 	void aboutSlot();
 	void aboutCardTypeSlot();
+	void showScoreChartSlot();
 };

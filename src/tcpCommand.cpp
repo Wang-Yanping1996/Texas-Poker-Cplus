@@ -85,6 +85,32 @@ commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, int n
 	}
 }
 
+commandAndDataToClient::commandAndDataToClient(tcpCommandToClient command, QStandardItemModel const * matrix){
+	m_command = intTo4Bytes((int)command);
+	m_data.clear();
+	const int row = matrix->rowCount();
+	const int col = matrix->columnCount();
+	m_data = m_data.append(intTo4Bytes(row));
+	m_data = m_data.append(intTo4Bytes(col));
+
+	//先写姓名，头部为姓名长
+	for (int i = 0; i < row; i++) {
+		QByteArray nameData = matrix->item(i, 0)->text().toLocal8Bit();
+		//string name(matrix->item(i, 0)->text().toLocal8Bit());				//防止乱码
+		const int nameDataLen = nameData.length();
+		QByteArray nameDataHead = intTo4Bytes(nameDataLen);
+		m_data = m_data.append(nameDataHead);
+		m_data = m_data.append(nameData);
+	}
+	//纯数字，无头
+	for (int j = 1; j < col; j++) {
+		for (int i = 0; i < row; i++) {
+			const int numData = matrix->item(i, j)->text().toInt();
+			m_data = m_data.append(intTo4Bytes(numData));
+		}
+	}
+}
+
 QByteArray commandAndDataToClient::getTcpSend() const
 {
 	QByteArray body = m_command;

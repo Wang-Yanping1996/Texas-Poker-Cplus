@@ -157,7 +157,7 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	setWindowTitle(QStringLiteral("德州扑克"));
 	if (this->objectName().isEmpty())
 		this->setObjectName(QStringLiteral("TexasPokerNewClass"));
-	this->resize(1200, 680);
+	this->resize(1200, 720);
 	menuBar = new QMenuBar(this);
 	menuBar->setObjectName(QStringLiteral("menuBar"));
 	this->setMenuBar(menuBar);
@@ -186,6 +186,11 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	aboutCardType->setStatusTip(QStringLiteral("关于"));
 	connect(aboutCardType, SIGNAL(triggered()), this, SLOT(aboutCardTypeSlot()));
 	helpMenu->addAction(aboutCardType);
+
+	QAction *showScoreChart = new QAction(menuBar);
+	showScoreChart->setText(QStringLiteral("计分板"));
+	menuBar->addAction(showScoreChart);
+	connect(showScoreChart, SIGNAL(triggered()), this, SLOT(showScoreChartSlot()));
 
 	for (int i_card = 0; i_card < game::maxNumOfCommonCards; ++i_card) {
 		commonCards[i_card] = new QLabel(centralWidget);
@@ -249,6 +254,16 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	begin->raise();
 	begin->setFont(font);
 	begin->hide();
+
+	dealer = new QLabel(centralWidget);
+	dealer->setObjectName(QStringLiteral("dealer"));
+	dealer->setText(QStringLiteral("dealer"));
+	dealer->setFont(font);
+	dealer->setTextFormat(Qt::AutoText);
+	dealer->setScaledContents(false);
+	dealer->setAlignment(Qt::AlignCenter);
+	dealer->raise();
+	dealer->hide();
 
 	raise = new QPushButton(centralWidget);
 	raise->setObjectName(QStringLiteral("raise"));
@@ -328,7 +343,15 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	m_headLen = 0;
 	m_buffer.clear();
 
+	//打开客户端时获取本机第一个mac地址
+	if (!this->getMacByGetAdaptersInfo()) {
+		QMessageBox::about(this, QStringLiteral("错误"), QStringLiteral("获取本机地址失败"));
+		QApplication::exit();
+	}
+
 	connect(m_connect, SIGNAL(clicked()), this, SLOT(connectTcp()));
+	connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	//从tcp连接成功处移到这里
+
 	connect(m_tcpClient, SIGNAL(readyRead()), this, SLOT(readData()));
 	connect(begin, SIGNAL(clicked()), this, SLOT(clientReady()));
 
@@ -337,6 +360,50 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	connect(check, SIGNAL(clicked()), this, SLOT(nowPlayerCheck()));
 	connect(call, SIGNAL(clicked()), this, SLOT(nowPlayerCall()));
 	connect(fold, SIGNAL(clicked()), this, SLOT(nowPlayerFold()));
+}
+
+bool TexasPokerClientUI::getMacByGetAdaptersInfo(){
+	bool ret = false;
+
+	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+	PIP_ADAPTER_INFO pAdapterInfo = (IP_ADAPTER_INFO*)malloc(sizeof(IP_ADAPTER_INFO));
+	if (pAdapterInfo == NULL)
+		return false;
+	// Make an initial call to GetAdaptersInfo to get the necessary size into the ulOutBufLen variable
+	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
+	{
+		free(pAdapterInfo);
+		pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+		if (pAdapterInfo == NULL)
+			return false;
+	}
+
+	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == NO_ERROR)
+	{
+		for (PIP_ADAPTER_INFO pAdapter = pAdapterInfo; pAdapter != NULL; pAdapter = pAdapter->Next)
+		{
+			// 确保是以太网
+			if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
+				continue;
+			// 确保MAC地址的长度为 00-00-00-00-00-00
+			if (pAdapter->AddressLength != 6)
+				continue;
+			char acMAC[32];
+			sprintf_s(acMAC, "%02X-%02X-%02X-%02X-%02X-%02X",
+				int(pAdapter->Address[0]),
+				int(pAdapter->Address[1]),
+				int(pAdapter->Address[2]),
+				int(pAdapter->Address[3]),
+				int(pAdapter->Address[4]),
+				int(pAdapter->Address[5]));
+			this->macAddress = acMAC;
+			ret = true;
+			break;
+		}
+	}
+
+	free(pAdapterInfo);
+	return ret;
 }
 
 //分支应该写成==判断
@@ -481,6 +548,50 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 		const int index = bytes4ToInt(dataArray);
 		this->setClientPlayerIndex(index);
 	}
+	else if (receivedCommand == tcpCommandToClient::sendScoreChartData) {
+		const int row = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
+		const int col = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
+		if (col != 5) {
+			//错误处理
+			QMessageBox::about(this, QStringLiteral("获取失败"), QStringLiteral("获取失败"));
+			return;
+		}
+		QStandardItemModel* scoreChart = new QStandardItemModel();
+		scoreChart->setHorizontalHeaderLabels({ QStringLiteral("玩家名"), QStringLiteral("总带入"), QStringLiteral("当前总筹码"), QStringLiteral("场上筹码"), QStringLiteral("净胜") });
+		scoreChart->setRowCount(row);
+		scoreChart->setColumnCount(col);
+		//先读名字
+		for (int i = 0; i < row; i++) {
+			const int nameDataLen = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+			dataArray.remove(0, commandAndDataToClient::byteOfInt);
+			QString name = QString::fromLocal8Bit(dataArray.left(nameDataLen).toStdString().data());
+			dataArray.remove(0, nameDataLen);
+			scoreChart->setItem(i, 0, new QStandardItem(name));
+		}
+		//读数据
+		for (int j = 1; j < col; j++) {
+			for (int i = 0; i < row; i++) {
+				const int num = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
+				dataArray.remove(0, commandAndDataToClient::byteOfInt);
+				scoreChart->setItem(i, j, new QStandardItem(QString::number(num)));
+			}
+		}
+		//显示
+
+		QTableView *tableView = new QTableView;
+		tableView->resize(550, 500);
+		tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+		tableView->setWindowTitle(QStringLiteral("计分板"));
+		tableView->setModel(scoreChart);
+		tableView->show();
+		tableView->setSortingEnabled(true);
+	}
+	else if (receivedCommand == tcpCommandToClient::showDealer) {
+		const int dealerIndex = bytes4ToInt(dataArray);
+		this->showPlayerDealer(dealerIndex);
+	}
 }
 
 void TexasPokerClientUI::sendCommandAndDataToServer(commandAndDataToServer toSend) const
@@ -566,6 +677,13 @@ void TexasPokerClientUI::showPlayerSidePot(const int playerIndex, const int mone
 {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
 	this->players[playerIndexInClient]->showSidePot(money);
+}
+
+void TexasPokerClientUI::showPlayerDealer(const int playerIndex) const
+{
+	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
+	this->dealer->setGeometry(QRect(80 + playerPosition[playerIndexInClient][0], 180 + playerPosition[playerIndexInClient][1], 70, 23));
+	this->dealer->show();
 }
 
 //player hide方法
@@ -658,10 +776,13 @@ void TexasPokerClientUI::connectTcp() {
 		return;
 	}
 	//连接成功，出现自己名字和开始按键，应该由服务器发送
-	connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	
-	string playerName(m_name->text().toLocal8Bit());	//防止乱码
+	string playerName(m_name->text().toLocal8Bit());				//防止乱码
 	commandAndDataToServer toSend(tcpCommandToServer::setPlayerNameCommand, playerName);
 	this->sendCommandAndDataToServer(toSend);	//设置自己的名字
+
+	//发送本机mac地址
+	this->sendCommandAndDataToServer(commandAndDataToServer(tcpCommandToServer::setClientMacAddressCommand, this->macAddress));
+
 	//关闭ip地址框和connect
 	this->m_address->hide();
 	this->m_port->hide();
@@ -764,9 +885,6 @@ void TexasPokerClientUI::aboutCardTypeSlot() {
 	statusBar = new QStatusBar(newWindow);
 	statusBar->setObjectName(QStringLiteral("statusBar"));
 	newWindow->setStatusBar(statusBar);
-	
-	QPushButton * test = new QPushButton(centralWidget);
-	test->show();
 
 	QLabel *imageShow = new QLabel(centralWidget);
 	QString path = "image/tubiao/cardType.jpg";
@@ -776,5 +894,10 @@ void TexasPokerClientUI::aboutCardTypeSlot() {
 	
 	newWindow->show();
 
+}
+
+void TexasPokerClientUI::showScoreChartSlot() {
+	commandAndDataToServer toSend(tcpCommandToServer::showScoreChartCommand);
+	this->sendCommandAndDataToServer(toSend);
 }
 

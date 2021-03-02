@@ -44,7 +44,10 @@ enum tcpCommandToClient {
 	hideClientPlayerCallActionCommand = 0x04000000,
 	hideClientPlayerFoldActionCommand = 0x08000000,
 
-	setClientPlayerIndex = 0x10000000
+	setClientPlayerIndex = 0x10000000,
+	sendScoreChartData = 0x20000000,
+	showDealer = 0x40000000
+
 };
 
 enum tcpCommandToServer {
@@ -57,7 +60,10 @@ enum tcpCommandToServer {
 
 	nowPlayerFoldCommand = 0x00000010,
 	playerReadyCommand = 0x00000020,
-	setPlayerNameCommand = 0x00000040
+	setPlayerNameCommand = 0x00000040,
+
+	setClientMacAddressCommand = 0x00000080,
+	showScoreChartCommand = 0x00000100
 };
 class commandAndDataToClient {
 public:
@@ -72,6 +78,7 @@ public:
 	commandAndDataToClient(tcpCommandToClient command, int num1, int num2);
 	commandAndDataToClient(tcpCommandToClient command, int num, string data);
 	commandAndDataToClient(tcpCommandToClient command, int num, vector<card> cards);
+	commandAndDataToClient(tcpCommandToClient command, QStandardItemModel const* matrix);
 
 	/*tcpCommand getCommand()const { return this->m_command; };
 	QVariant getData()const { return this->m_data; };

@@ -117,7 +117,7 @@ public:
 	void hidePot()const;
 	void showBegin(const int playerIndex)const { this->players[playerIndex]->begin->show(); };
 	void hideBegin(const int playerIndex)const { this->players[playerIndex]->begin->hide(); };
-
+	void showDealer()const {};
 	//ÕÊº“œ‡πÿ
 	void showPlayerHandCards(const int playerIndex, vector<card> const& handCards)const;
 	void showPlayerName(const int playerIndex, string const& playerName)const;

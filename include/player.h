@@ -17,7 +17,7 @@ private:
 	int m_nowBet;						//现在已下注
 	//int m_sidePot;					//自己的边池
 	int m_winMoney;						//这局赢了多少
-	string m_IP;						//IP地址
+	string m_macAddress;				//mac地址
 	cardTypeAndPoint m_cardTypeAndPoint;//牌型和牌点
 	//bool m_hasFold;						//是否弃牌
 	actionType m_playerAction;			//player的上一个动作			
@@ -29,7 +29,7 @@ public:
 		int nowBet = -1,
 		//int sidePot = -1,
 		int winMoney = 0,
-		string IP = " ",
+		string macAddress = "",
 		cardTypeAndPoint cardTypeAndPoint = cardTypeAndPoint(cardType::ErrorType),
 		//bool hasFold = false,
 		actionType playerAction = actionType::ErrorAction
@@ -40,7 +40,7 @@ public:
 		m_nowBet(nowBet),
 		//m_sidePot(sidePot),
 		m_winMoney(winMoney),
-		m_IP(IP),
+		m_macAddress(macAddress),
 		m_cardTypeAndPoint(cardTypeAndPoint),
 		//m_hasFold(hasFold)
 		m_playerAction(playerAction){};
@@ -56,7 +56,7 @@ public:
 	int getNowBet() const { return this->m_nowBet; };
 	//int getSidePot() const { return this->m_sidePot; };
 	int getWinMoney() const { return this->m_winMoney; };
-	string getIP() const { return this->m_IP; };
+	string getMacAddress() const { return this->m_macAddress; };
 	cardTypeAndPoint getCardTypeAndPoint() const { return this->m_cardTypeAndPoint; };
 	//bool hasFold() const { return this->m_playerAction == actionType::Fold; };
 	actionType getPlayerAction()const { return this->m_playerAction; };
@@ -73,7 +73,7 @@ public:
 	//void setSidePot(const int sidePot) { this->m_sidePot = sidePot; };
 	void setWinMoney(const int winMoney) { this->m_winMoney = winMoney; };
 	void addToWinMoney(const int add) { this->m_winMoney += add; };
-	void setIP(string IP) { this->m_IP = IP; };
+	void setMacAddress(string macAddress) { this->m_macAddress = macAddress; };
 	void setCardTypeAndPoint(const cardTypeAndPoint cardTypeAndPoint) { this->m_cardTypeAndPoint = cardTypeAndPoint; };
 	void setFold() { this->setPlayerAction(actionType::Fold); };
 	void setPlayerAction(actionType action) { this->m_playerAction = action; };
