@@ -217,8 +217,8 @@ void game::playerEscape(const int playerIndex)	//仿照fold处理
 
 	escapedPlayer = player();		//建立一个空player代替
 
-	if (this->m_calledPlayersIndex.size() <= 1) {	//没人了，结算
-		this->updatePots();										//更新底池与边池
+	if (this->m_hasStarted && this->m_calledPlayersIndex.size() <= 1) {	//游戏进行中 且 没人了，结算
+		this->updatePots();												//更新底池与边池
 
 		this->settle();
 		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
@@ -470,6 +470,7 @@ void game::updatePlayerScore(const int playerIndex) {
 	this->m_scoreChart->setItem(playerRow, 4, new QStandardItem(QString::number(totalWin)));
 }
 //与上面一样，只有桌上筹码修改不一样。。。
+//其实可以写在一起，加标志判断区别操作，但是担心后面出现escape的bug，需要大修改，所以先分开写了
 void game::updateEscapedPlayerScore(const int playerIndex) {
 	const string macAddress = this->getPlayerMacAddress(playerIndex);
 	auto iter = this->m_macAddressToScoreChartIndex.find(macAddress);
@@ -699,6 +700,9 @@ void game::settle(){		//结算
 			}
 		}
 	}
+	this->clearPot();
+	this->clearSidePot();
+
 	//玩家自己结算
 	for (int i = 0; i < maxNumOfPlayers; ++i) {
 		player& curPlayer = this->getPlayer(i);
@@ -818,7 +822,8 @@ void game::showPlayerMessage(const int playerIndex, string const & message)
 void game::showPlayerRaiseAction(const int playerIndex)
 {
 	player const& curPlayer = this->getPlayer(playerIndex);
-	const int maxMoney = curPlayer.getChip();
+	const int nowBet = curPlayer.getNowBet();
+	const int maxMoney = curPlayer.getChip() + nowBet;
 	const int minMoney = this->m_minBet + game::bigBind;			//+大盲为最小加注
 	this->m_ui->showPlayerRaiseAction(playerIndex, minMoney, maxMoney);
 }
@@ -896,3 +901,9 @@ void virUI::showPlayer1CardBackOnPlayer2(const int player1Index, const int playe
 	vector<card> cardBacks(player::numOfHandCards, card(cardColor::CardBackColor, cardNumber::CardBackNumber));
 	this->showPlayer1HandCardOnPlayer2(player1Index, player2Index, cardBacks);
 }
+
+//void sidePot::clear()
+//{
+//	this->m_sidePotMoney = 0;
+//	this->m_sidePotParticipateIndex.clear();
+//}

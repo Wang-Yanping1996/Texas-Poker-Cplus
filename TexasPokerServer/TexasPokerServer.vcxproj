@@ -107,11 +107,13 @@
     <ClCompile Include="..\src\game.cpp" />
     <ClCompile Include="..\src\player.cpp" />
     <ClCompile Include="..\src\tcpCommand.cpp" />
+    <ClCompile Include="..\src\tcpPackageAnalyzer.cpp" />
     <ClCompile Include="TexasPokerServer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\tcpCommand.h" />
+    <ClInclude Include="..\include\tcpPackageAnalyzer.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

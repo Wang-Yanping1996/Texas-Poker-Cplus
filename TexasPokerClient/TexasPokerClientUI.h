@@ -17,6 +17,7 @@
 #include <QtWidgets/qheaderview.h>
 #include "game.h"
 #include "tcpCommand.h"
+#include "tcpPackageAnalyzer.h"
 
 #include <string>
 #include <winsock2.h>
@@ -131,8 +132,9 @@ private:
 	QLineEdit *m_address;
 	QLineEdit *m_port;
 	//防止粘包
-	QByteArray m_buffer;
-	int m_headLen;
+	tcpPackageAnalyzer m_tcpPackageAnalyzer;
+	/*QByteArray m_buffer;
+	int m_headLen;*/
 	//记录当前client玩家编号
 	int m_clientPlayerIndex;
 	
@@ -182,6 +184,8 @@ public:
 	virtual void hideClientPlayerCheckAction()const;
 	virtual void hideClientPlayerCallAction()const;
 	virtual void hideClientPlayerFoldAction()const;
+	//防止重复按键
+	void hideClientPlayerAllAction()const;
 public slots:
 	void connectTcp();
 	void nowPlayerRaise();

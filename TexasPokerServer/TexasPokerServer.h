@@ -14,6 +14,7 @@
 #include <QtWidgets/qapplication.h>
 
 #include "tcpCommand.h"
+#include "tcpPackageAnalyzer.h"
 //空窗口ui
 class emptyServerUI : public QMainWindow, public virUI {
 	Q_OBJECT
@@ -73,8 +74,9 @@ private:
 	QTcpServer *m_tcpServer;
 	
 	//防粘包
-	vector<QByteArray> m_buffers;
-	vector<int> m_headLens;
+	vector<tcpPackageAnalyzer> m_tcpPackageAnalyzers; 
+	//vector<QByteArray> m_buffers;
+	//vector<int> m_headLens;
 	//分离不同client的消息
 	map<QTcpSocket*, int> m_SocketMap;
 	//设定监听端口号

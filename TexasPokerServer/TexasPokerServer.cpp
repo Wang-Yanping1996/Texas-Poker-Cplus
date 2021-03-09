@@ -52,9 +52,11 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 
 	m_arrayClient = vector<QTcpSocket*>(game::maxNumOfPlayers, nullptr);
 
-	m_buffers = vector<QByteArray>(game::maxNumOfPlayers);
-	for (auto& buffer : m_buffers)buffer.clear();
-	m_headLens = vector<int>(game::maxNumOfPlayers, 0);
+	m_tcpPackageAnalyzers = vector<tcpPackageAnalyzer>(game::maxNumOfPlayers);
+	for (auto& analyzer : m_tcpPackageAnalyzers)analyzer.clear();
+	//m_buffers = vector<QByteArray>(game::maxNumOfPlayers);
+	//for (auto& buffer : m_buffers)buffer.clear();
+	//m_headLens = vector<int>(game::maxNumOfPlayers, 0);
 	m_SocketMap = map<QTcpSocket*, int>();
 	m_SocketMap.clear();
 
@@ -426,32 +428,40 @@ void emptyServerUI::readData()
 		return;	//错误
 	}
 	const int nowPlayerIndex = this->m_SocketMap[nowClientSocket];	//获取当前发送信息的玩家序号
-
-	QByteArray& nowBuffer = this->m_buffers[nowPlayerIndex];		//当前玩家缓存的引用
-	int& nowHeadLen = this->m_headLens[nowPlayerIndex];				//当前玩家包长的引用
-
-	QByteArray buffer = nowClientSocket->readAll();	//用readyRead触发已经读空
-	nowBuffer = nowBuffer.append(buffer);
-
-	while (1) {		//可能一次读了多个包，加了个循环，不知道对不对
-		if (nowHeadLen <= 0) {	//包体长度无意义，需要读取包体长度
-			if (nowBuffer.length() < 4)		//前4字节是包体长度,不够就等下次
-				return;
-			QByteArray head = nowBuffer.left(4);
-			nowBuffer.remove(0, 4);
-			nowHeadLen = bytes4ToInt(head);
-		}
-		const int len = nowBuffer.length();
-		if (len < nowHeadLen) {	//数据长度不够，等下次
-			return;
-		}
-		QByteArray commandAndDataArray = nowBuffer.left(nowHeadLen);
-		nowBuffer.remove(0, nowHeadLen);
-		nowHeadLen = 0;						//读完数据，重置包体长度
-
-													//根据命令进行操作了
+	
+	QByteArray newData = nowClientSocket->readAll();				//用readyRead触发已经读空
+	vector<QByteArray> tcpPackages = this->m_tcpPackageAnalyzers[nowPlayerIndex].getTcpPackages(newData);
+	for (QByteArray const& commandAndDataArray : tcpPackages) {
 		this->analyzeCommand(commandAndDataArray, nowPlayerIndex);
 	}
+
+	//QByteArray& nowBuffer = this->m_buffers[nowPlayerIndex];		//当前玩家缓存的引用
+	//int& nowHeadLen = this->m_headLens[nowPlayerIndex];				//当前玩家包长的引用
+
+	//QByteArray newData = nowClientSocket->readAll();	//用readyRead触发已经读空
+	//
+
+	//nowBuffer = nowBuffer.append(buffer);
+
+	//while (1) {		//可能一次读了多个包，加了个循环，不知道对不对
+	//	if (nowHeadLen <= 0) {	//包体长度无意义，需要读取包体长度
+	//		if (nowBuffer.length() < 4)		//前4字节是包体长度,不够就等下次
+	//			return;
+	//		QByteArray head = nowBuffer.left(4);
+	//		nowBuffer.remove(0, 4);
+	//		nowHeadLen = bytes4ToInt(head);
+	//	}
+	//	const int len = nowBuffer.length();
+	//	if (len < nowHeadLen) {	//数据长度不够，等下次
+	//		return;
+	//	}
+	//	QByteArray commandAndDataArray = nowBuffer.left(nowHeadLen);
+	//	nowBuffer.remove(0, nowHeadLen);
+	//	nowHeadLen = 0;						//读完数据，重置包体长度
+
+	//												//根据命令进行操作了
+	//	this->analyzeCommand(commandAndDataArray, nowPlayerIndex);
+	//}
 }
 
 void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
@@ -465,8 +475,10 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 	//清理socket相关,Tcpserver需要进行处理吗？
 	this->m_SocketMap.erase(disconnectClientSocket);
 	this->m_arrayClient[disconnectPlayerIndex] = nullptr;
-	this->m_buffers[disconnectPlayerIndex].clear();
-	this->m_headLens[disconnectPlayerIndex] = 0;
+	
+	this->m_tcpPackageAnalyzers[disconnectPlayerIndex].clear();
+	/*this->m_buffers[disconnectPlayerIndex].clear();
+	this->m_headLens[disconnectPlayerIndex] = 0;*/
 
 	if (this->m_SocketMap.size() < 1) {		//少于1人则服务器退出
 		QApplication::exit();

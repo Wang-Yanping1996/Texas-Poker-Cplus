@@ -104,10 +104,12 @@
     <QtMoc Include="TexasPokerClientUI.h" />
     <ClCompile Include="..\src\cardHeap.cpp" />
     <ClCompile Include="..\src\tcpCommand.cpp" />
+    <ClCompile Include="..\src\tcpPackageAnalyzer.cpp" />
     <ClCompile Include="TexasPokerClientUI.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\tcpPackageAnalyzer.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

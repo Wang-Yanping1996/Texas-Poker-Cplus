@@ -340,8 +340,9 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 
 	m_tcpClient = new QTcpSocket(this);
 	m_tcpClient->abort();
-	m_headLen = 0;
-	m_buffer.clear();
+	m_tcpPackageAnalyzer.clear();
+	//m_headLen = 0;
+	//m_buffer.clear();
 
 	//打开客户端时获取本机第一个mac地址
 	if (!this->getMacByGetAdaptersInfo()) {
@@ -575,7 +576,8 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 			for (int i = 0; i < row; i++) {
 				const int num = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
 				dataArray.remove(0, commandAndDataToClient::byteOfInt);
-				scoreChart->setItem(i, j, new QStandardItem(QString::number(num)));
+				scoreChart->setData(scoreChart->index(i, j), num);					//用setData设置，server还是setItem，没改，暂时还用不到
+				//scoreChart->setItem(i, j, new QStandardItem(QString::number(num)));
 			}
 		}
 		//显示
@@ -586,7 +588,8 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 		tableView->setWindowTitle(QStringLiteral("计分板"));
 		tableView->setModel(scoreChart);
 		tableView->show();
-		tableView->setSortingEnabled(true);
+		tableView->setSortingEnabled(true);											//排序方法有问题，上面用setData设置就好了
+		tableView->sortByColumn(4, Qt::SortOrder::DescendingOrder);
 	}
 	else if (receivedCommand == tcpCommandToClient::showDealer) {
 		const int dealerIndex = bytes4ToInt(dataArray);
@@ -757,6 +760,15 @@ void TexasPokerClientUI::hideClientPlayerFoldAction() const {
 	this->fold->hide();
 }
 
+void TexasPokerClientUI::hideClientPlayerAllAction() const
+{
+	this->hideClientPlayerAllinAction();
+	this->hideClientPlayerCallAction();
+	this->hideClientPlayerCheckAction();
+	this->hideClientPlayerFoldAction();
+	this->hideClientPlayerRaiseAction();
+}
+
 //槽函数
 void TexasPokerClientUI::connectTcp() {
 	QString receivedAddress = m_address->text();
@@ -791,6 +803,7 @@ void TexasPokerClientUI::connectTcp() {
 }
 void TexasPokerClientUI::nowPlayerRaise()
 {
+	this->hideClientPlayerAllAction();
 	const int raiseMoney = this->raiseMoney->text().toInt();
 	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerRaiseCommand, raiseMoney);
 	this->sendCommandAndDataToServer(toSend);
@@ -798,24 +811,28 @@ void TexasPokerClientUI::nowPlayerRaise()
 
 void TexasPokerClientUI::nowPlayerAllin()
 {
+	this->hideClientPlayerAllAction();
 	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerAllinCommand);
 	this->sendCommandAndDataToServer(toSend);
 }
 
 void TexasPokerClientUI::nowPlayerCheck()
 {
+	this->hideClientPlayerAllAction();
 	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerCheckCommand);
 	this->sendCommandAndDataToServer(toSend);
 }
 
 void TexasPokerClientUI::nowPlayerCall()
 {
+	this->hideClientPlayerAllAction();
 	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerCallCommand);
 	this->sendCommandAndDataToServer(toSend);
 }
 
 void TexasPokerClientUI::nowPlayerFold()
 {
+	this->hideClientPlayerAllAction();
 	commandAndDataToServer toSend(tcpCommandToServer::nowPlayerFoldCommand);
 	this->sendCommandAndDataToServer(toSend);
 }
@@ -828,28 +845,32 @@ void TexasPokerClientUI::clientReady()
 }
 
 void TexasPokerClientUI::readData() {			//可能得加个while循环
-	QByteArray buffer = m_tcpClient->readAll();	//用readyRead触发已经读空
-	this->m_buffer = this->m_buffer.append(buffer);	
-	
-	while (1) {		//可能一次读了多个包，加了个循环，不知道对不对
-		if (this->m_headLen <= 0) {	//包体长度无意义，需要读取包体长度
-			if (this->m_buffer.length() < 4)		//前4字节是包体长度,不够就等下次
-				return;
-			QByteArray head = this->m_buffer.left(4);
-			this->m_buffer.remove(0, 4);
-			this->m_headLen = bytes4ToInt(head);
-		}
-		const int len = this->m_buffer.length();
-		if (len < this->m_headLen) {	//数据长度不够，等下次
-			return;
-		}
-		QByteArray commandAndDataArray = this->m_buffer.left(this->m_headLen);
-		this->m_buffer.remove(0, this->m_headLen);
-		this->m_headLen = 0;						//读完数据，重置包体长度
-
-		//根据命令进行操作了
+	QByteArray newData = m_tcpClient->readAll();	//用readyRead触发已经读空
+	vector<QByteArray> tcpPackages = this->m_tcpPackageAnalyzer.getTcpPackages(newData);
+	for (auto const& commandAndDataArray : tcpPackages) {
 		this->analyzeCommand(commandAndDataArray);
 	}
+	//this->m_buffer = this->m_buffer.append(buffer);	
+	//
+	//while (1) {		//可能一次读了多个包，加了个循环，不知道对不对
+	//	if (this->m_headLen <= 0) {	//包体长度无意义，需要读取包体长度
+	//		if (this->m_buffer.length() < 4)		//前4字节是包体长度,不够就等下次
+	//			return;
+	//		QByteArray head = this->m_buffer.left(4);
+	//		this->m_buffer.remove(0, 4);
+	//		this->m_headLen = bytes4ToInt(head);
+	//	}
+	//	const int len = this->m_buffer.length();
+	//	if (len < this->m_headLen) {	//数据长度不够，等下次
+	//		return;
+	//	}
+	//	QByteArray commandAndDataArray = this->m_buffer.left(this->m_headLen);
+	//	this->m_buffer.remove(0, this->m_headLen);
+	//	this->m_headLen = 0;						//读完数据，重置包体长度
+
+	//	//根据命令进行操作了
+	//	this->analyzeCommand(commandAndDataArray);
+	//}
 }
 
 void TexasPokerClientUI::disconnectTcp() {

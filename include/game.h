@@ -68,6 +68,7 @@ private:
 	vector<int> m_sidePotParticipateIndex;
 public:
 	sidePot(int sidePotMoney = 0, vector<int> const& sidePotParticipateIndex = vector<int>(0)) : m_sidePotMoney(sidePotMoney), m_sidePotParticipateIndex(sidePotParticipateIndex) {};
+	//void clear();
 	int getSidePotMoney()const { return this->m_sidePotMoney; };
 	vector<int>& getSidePotParticipatIndex() { return this->m_sidePotParticipateIndex; };
 	vector<int> const& getSidePotParticipatIndex()const { return this->m_sidePotParticipateIndex; };
