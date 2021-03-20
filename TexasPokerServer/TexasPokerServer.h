@@ -25,8 +25,9 @@ public:
 	game* getGamePoint()const { return this->m_game; };
 
 	void analyzeCommand(QByteArray received, const int fromPlayerIndex);		//接收到的命令
-	void sendCommandAndDataToPlayer(const int playerIndex, commandAndDataToClient toSend)const;	//底层不一样
-	void sendCommandAndDataToAll(commandAndDataToClient toSend)const;							//这两个实现不一样
+	void sendCommandAndDataToPlayer(const int playerIndex, commandAndDataToClient toSend)const;		//底层不一样
+	void sendCommandAndDataToAll(commandAndDataToClient toSend)const;								//和toPlayer实现不一样
+	void sendCommandAndDataToAllExcept(const int exceptPlayerIndex, commandAndDataToClient toSend);	//和toAll类似
 
 	//继承的纯虚函数
 	virtual void showCommonCards(vector<card> const& commonCards)const;

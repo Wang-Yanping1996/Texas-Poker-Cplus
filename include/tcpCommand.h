@@ -46,7 +46,8 @@ enum tcpCommandToClient {
 
 	setClientPlayerIndex = 0x10000000,
 	sendScoreChartData = 0x20000000,
-	showDealer = 0x40000000
+	showDealer = 0x40000000,
+	showClientChatMessage = 0x80000000
 
 };
 
@@ -63,7 +64,8 @@ enum tcpCommandToServer {
 	setPlayerNameCommand = 0x00000040,
 
 	setClientMacAddressCommand = 0x00000080,
-	showScoreChartCommand = 0x00000100
+	showScoreChartCommand = 0x00000100,
+	showChatMessage = 0x00000200
 };
 class commandAndDataToClient {
 public:

@@ -15,6 +15,10 @@
 #include <QtGui/qpixmap.h>
 #include <QtWidgets/qtableview.h>
 #include <QtWidgets/qheaderview.h>
+#include <QtWidgets/qlistwidget.h>
+#include <QtWidgets/qcombobox.h>
+#include <qevent.h>
+
 #include "game.h"
 #include "tcpCommand.h"
 #include "tcpPackageAnalyzer.h"
@@ -46,6 +50,21 @@ vector<card> QByteArrayToCards(QByteArray const& qArray);
 //	void connectTcp();
 //
 //};
+
+//继承QComboBox 以 实现 回车信号
+class ComboBoxWithPress : public QComboBox
+{
+	Q_OBJECT
+public:
+	explicit ComboBoxWithPress(QWidget* parent = nullptr);
+
+protected:
+	void keyReleaseEvent(QKeyEvent *e);
+
+signals:
+	void keyEnterReleased();
+};
+
 
 class playerClient : public QWidget {
 	Q_OBJECT
@@ -108,6 +127,12 @@ private:
 	QToolBar *mainToolBar;
 	QWidget *centralWidget;
 	QStatusBar *statusBar;	
+	//聊天框相关
+	QPushButton *chatSendMessage;
+	QListWidget *chatMessageOutput;
+	//QLineEdit *chatMessageInput;
+	ComboBoxWithPress *chatMessageInput;
+
 	//player相关
 	playerClient *players[game::maxNumOfPlayers];
 	//client版本，只需要一个行动键
@@ -199,4 +224,6 @@ public slots:
 	void aboutSlot();
 	void aboutCardTypeSlot();
 	void showScoreChartSlot();
+	//聊天信息
+	void chatSendMessageSlot();
 };

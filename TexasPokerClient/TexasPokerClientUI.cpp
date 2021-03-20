@@ -22,7 +22,21 @@ vector<card> QByteArrayToCards(QByteArray const & qArray)
 	}
 	return cards;
 }
-;
+
+ComboBoxWithPress::ComboBoxWithPress(QWidget *parent) : QComboBox(parent)
+{
+
+}
+
+void ComboBoxWithPress::keyReleaseEvent(QKeyEvent *e)
+{
+	if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return)
+	{
+		qDebug() << "enter released";
+		emit keyEnterReleased();
+	}
+}
+
 
 playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex) {
 	for (int i = 0; i < player::numOfHandCards; ++i) {
@@ -157,7 +171,7 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	setWindowTitle(QStringLiteral("德州扑克"));
 	if (this->objectName().isEmpty())
 		this->setObjectName(QStringLiteral("TexasPokerNewClass"));
-	this->resize(1200, 720);
+	this->resize(1600, 720);					//宽，高，原1200*720，为了加聊天框扩展到1600*720
 	menuBar = new QMenuBar(this);
 	menuBar->setObjectName(QStringLiteral("menuBar"));
 	this->setMenuBar(menuBar);
@@ -335,7 +349,9 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	m_name->setObjectName(QStringLiteral("playerName"));
 	m_name->setGeometry(QRect(550, 230, 100, 30));
 	m_name->raise();
-	m_name->setText(QStringLiteral("姓名："));
+	//m_name->setText(QStringLiteral("姓名："));
+	m_name->setMaxLength(8);
+	m_name->setPlaceholderText(QStringLiteral("请输入姓名"));
 	m_name->show();
 
 	m_tcpClient = new QTcpSocket(this);
@@ -595,6 +611,11 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 		const int dealerIndex = bytes4ToInt(dataArray);
 		this->showPlayerDealer(dealerIndex);
 	}
+	else if (receivedCommand == tcpCommandToClient::showClientChatMessage) {
+		const string chatMessage = dataArray.toStdString();
+		this->chatMessageOutput->addItem(QString::fromLocal8Bit(chatMessage.data()));
+		this->chatMessageOutput->setCurrentRow(chatMessageOutput->count() - 1);
+	}
 }
 
 void TexasPokerClientUI::sendCommandAndDataToServer(commandAndDataToServer toSend) const
@@ -658,6 +679,7 @@ void TexasPokerClientUI::hidePot() const {
 }
 
 //player show方法
+//客户端下，player数组中，自己的编号是0，但是在服务器中的编号不一定是0
 //考虑了当前client编号，假设当前x，需要显示y，则实际在本client显示的位置应该是(y-x+8)%8
 void TexasPokerClientUI::showPlayerHandCards(const int playerIndex, vector<card> const& handCards) const {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
@@ -800,6 +822,46 @@ void TexasPokerClientUI::connectTcp() {
 	this->m_port->hide();
 	this->m_connect->hide();
 	this->m_name->hide();
+
+	//新增聊天框
+	chatMessageOutput = new QListWidget(centralWidget);
+	chatMessageInput = new ComboBoxWithPress(centralWidget);
+	chatSendMessage = new QPushButton(centralWidget);
+
+	chatMessageOutput->setGeometry(QRect(1250, 0, 330, 500));
+	chatMessageInput->setGeometry(QRect(1250, 520, 270, 30));
+	chatSendMessage->setGeometry(QRect(1250 + 285, 520, 40, 30));
+
+	chatMessageOutput->show();
+	chatMessageInput->show();
+	chatSendMessage->show();
+
+	chatMessageOutput->setWordWrap(true);
+	chatMessageOutput->setTextElideMode(Qt::ElideNone);
+
+	chatMessageInput->setEditable(true);
+	chatMessageInput->addItem(QStringLiteral("不要走，决战到天亮。"));
+	chatMessageInput->addItem(QStringLiteral("和你合作真是太愉快啦！"));
+	chatMessageInput->addItem(QStringLiteral("再见了，我会想念大家的。"));
+	chatMessageInput->addItem(QStringLiteral("下次再玩吧，我要走了。"));
+	chatMessageInput->addItem(QStringLiteral("你是MM，还是GG？"));
+	chatMessageInput->addItem(QStringLiteral("不要吵了，有什么好吵的？"));
+	chatMessageInput->addItem(QStringLiteral("又断线了，网络怎么这么差？"));
+	chatMessageInput->addItem(QStringLiteral("各位，真不好意思，我要离开一会。"));
+	chatMessageInput->addItem(QStringLiteral("我们交个朋友吧，能告诉我你的联系方式吗？"));
+	chatMessageInput->addItem(QStringLiteral("你的牌打得太好了！"));
+	chatMessageInput->addItem(QStringLiteral("快点吧，我等得花都谢了！"));
+	chatMessageInput->addItem(QStringLiteral("大家好，很高兴见到各位！"));
+
+	chatMessageInput->setCurrentText("");
+	chatMessageInput->setInsertPolicy(QComboBox::NoInsert);
+	chatMessageInput->lineEdit()->setMaxLength(100);
+
+	chatSendMessage->setText(QStringLiteral("发送"));
+
+	connect(chatSendMessage, SIGNAL(clicked()), this, SLOT(chatSendMessageSlot()));
+	connect(chatMessageInput, SIGNAL(activated(QString)), this, SLOT(chatSendMessageSlot()));
+	connect(chatMessageInput, SIGNAL(keyEnterReleased()), this, SLOT(chatSendMessageSlot()));
 }
 void TexasPokerClientUI::nowPlayerRaise()
 {
@@ -920,5 +982,23 @@ void TexasPokerClientUI::aboutCardTypeSlot() {
 void TexasPokerClientUI::showScoreChartSlot() {
 	commandAndDataToServer toSend(tcpCommandToServer::showScoreChartCommand);
 	this->sendCommandAndDataToServer(toSend);
+}
+
+
+void TexasPokerClientUI::chatSendMessageSlot() {
+	string clientChatMessage(this->chatMessageInput->currentText().toLocal8Bit());
+	this->chatMessageInput->setCurrentText("");
+	if (clientChatMessage.size() == 0) {
+		return;
+	}
+	string clientPlayerName(this->players[0]->playerName->text().toLocal8Bit());
+	string totalMessage = clientPlayerName + "：" + clientChatMessage;
+	
+	this->chatMessageOutput->addItem(QString::fromLocal8Bit(totalMessage.data()));
+	this->chatMessageOutput->setCurrentRow(chatMessageOutput->count() - 1);
+
+	commandAndDataToServer toSend(tcpCommandToServer::showChatMessage, totalMessage);
+	this->sendCommandAndDataToServer(toSend);
+	return;
 }
 

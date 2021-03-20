@@ -164,6 +164,11 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 		commandAndDataToClient toSend(tcpCommandToClient::sendScoreChartData, scoreChart);
 		this->sendCommandAndDataToPlayer(fromPlayerIndex, toSend);
 	}
+	else if (receivedCommand == tcpCommandToServer::showChatMessage) {
+		const string message = dataArray.toStdString();
+		commandAndDataToClient toSend(tcpCommandToClient::showClientChatMessage, message);
+		this->sendCommandAndDataToAllExcept(fromPlayerIndex, toSend);
+	}
 }
 
 void emptyServerUI::sendCommandAndDataToPlayer(const int playerIndex, commandAndDataToClient toSend)const
@@ -182,6 +187,15 @@ void emptyServerUI::sendCommandAndDataToAll(commandAndDataToClient toSend)const
 	for (auto const& toSendPlayerSocket : this->m_arrayClient) {
 		if (toSendPlayerSocket != nullptr) {
 			toSendPlayerSocket->write(toSend.getTcpSend());	
+		}
+	}
+}
+
+void emptyServerUI::sendCommandAndDataToAllExcept(const int exceptPlayerIndex, commandAndDataToClient toSend)
+{
+	for (auto const& toSendPlayerSocket : this->m_arrayClient) {
+		if (toSendPlayerSocket != nullptr && toSendPlayerSocket != this->m_arrayClient[exceptPlayerIndex]) {
+			toSendPlayerSocket->write(toSend.getTcpSend());
 		}
 	}
 }
