@@ -50,6 +50,27 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 	m_portDisplay->raise();
 	m_portDisplay->show();
 
+	//游戏模式，正常or短牌
+	m_gameMode = new QButtonGroup(centralWidget);
+	m_gameMode->setExclusive(true);					//组内按键互斥
+
+	nomalMode = new QRadioButton(centralWidget);
+	nomalMode->setText(QStringLiteral("正常模式"));
+	nomalMode->setGeometry(QRect(650, 300, 100, 30));
+	nomalMode->show();
+	m_gameMode->addButton(nomalMode);
+	shortDeckMode = new QRadioButton(centralWidget);
+	shortDeckMode->setText(QStringLiteral("短牌模式"));
+	shortDeckMode->setGeometry(QRect(780, 300, 100, 30));
+	shortDeckMode->show();
+	m_gameMode->addButton(shortDeckMode);
+	
+	nomalMode->setChecked(true);
+
+	m_gameModeDisplay = new QLabel(this->centralWidget);		//模式显示
+	m_gameModeDisplay->setGeometry(QRect(500, 270, 200, 30));
+	m_gameModeDisplay->hide();
+	//tcp连接相关初始化
 	m_arrayClient = vector<QTcpSocket*>(game::maxNumOfPlayers, nullptr);
 
 	m_tcpPackageAnalyzers = vector<tcpPackageAnalyzer>(game::maxNumOfPlayers);
@@ -102,13 +123,28 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 	else if (receivedCommand == tcpCommandToServer::playerReadyCommand) {	//命令from的玩家ready了
 		this->showPlayerActionMessage(fromPlayerIndex, "准备！");
 		this->m_game->addNumOfReadyPlayer();								//ready人数加一，从begin中提出来了
-		this->m_game->begin();
+		this->m_game->begin();												//这里，感觉逻辑上应该是，直接判断人数是否相等，以决定是否进入begin。现在这样逻辑不够清晰
 	}
 	else if (receivedCommand == tcpCommandToServer::setPlayerNameCommand) {
-		const string playerName = dataArray.toStdString();
-		if (playerName != "姓名："&&playerName != "姓名") {					//不让起的名字，可以考虑给client返回提示
-			this->m_game->setPlayerName(fromPlayerIndex, playerName);
-			this->showPlayerName(fromPlayerIndex, playerName);
+		string newPlayerName = dataArray.toStdString();				//玩家想起的名字
+		string noRepeatName = newPlayerName;						//不重复的名字
+
+		std::unordered_set<std::string> playerNameSet;				//生成玩家名集合，如果新建成员变量，维护比较麻烦，以后考虑弄
+		for (const auto& player : this->m_game->getPlayers()) {
+			if (player.getPlayerType() != playerType::Empty) {
+				playerNameSet.insert(player.getName());
+			}
+		}
+
+		int index = 1;												//在原名后面+(数字)
+		while (playerNameSet.find(noRepeatName) != playerNameSet.end()) {
+			noRepeatName = newPlayerName + "(" + std::to_string(index) + ")";
+			index++;
+		}
+
+		if (newPlayerName != "姓名："&&newPlayerName != "姓名") {					//不让起的名字，可以考虑给client返回提示
+			this->m_game->setPlayerName(fromPlayerIndex, noRepeatName);
+			this->showPlayerName(fromPlayerIndex, noRepeatName);
 		}
 	}
 	else if (receivedCommand == tcpCommandToServer::setClientMacAddressCommand) {
@@ -497,9 +533,24 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 	if (this->m_SocketMap.size() < 1) {		//少于1人则服务器退出
 		QApplication::exit();
 	}
-	//如果游戏没开始
+
+	//如果游戏没开始，取消各玩家准备状态
 	if (!this->m_game->getGameHasStarted()) {
-		this->m_game->begin();
+		vector<player> const& playersArray = this->m_game->getPlayers();
+		for (int i = 0; i < (int)playersArray.size(); ++i) {
+			if (playersArray[i].getPlayerType() != playerType::Empty) {
+				//this->m_game->showPlayerName(i);
+				this->m_game->showPlayerChip(i);	//筹码需要显示，因为可能有更新
+				this->hidePlayerActionMessage(i);	//显示 取消准备
+			}
+			if (playersArray[i].getPlayerType() == playerType::OnSitePlayer
+				|| (playersArray[i].getPlayerType() == playerType::Looker && playersArray[i].getChip() > 0)) {
+				this->showBegin(i);					//显示begin按键
+			}
+		}
+		this->m_game->clearNumOfReadyPlayer();		//ready人数清空
+		
+		//this->m_game->begin();
 	}
 	
 }
@@ -513,6 +564,20 @@ void emptyServerUI::setPort()
 	m_port->hide();
 	m_setPort->hide();
 	m_portDisplay->setText(QStringLiteral("端口号为：") + QString::number(port));
+
+	//设置游戏模式
+	for (auto& button : m_gameMode->buttons()) {
+		button->hide();
+	}
+
+	//m_gameMode->checkedButton();		//激活的button
+	if (this->nomalMode->isChecked()) {
+		m_gameModeDisplay->setText(QStringLiteral("游戏模式为：正常模式"));		//正常模式 do nothing
+	} else if (this->shortDeckMode->isChecked()) {
+		this->m_game->removeCardsInHeap(2, 5);			//短牌不要2~5
+		m_gameModeDisplay->setText(QStringLiteral("游戏模式为：短牌模式（无2到5）"));
+	}
+	m_gameModeDisplay->show();
 }
 
 void emptyServerUI::closeEvent(QCloseEvent *e) {

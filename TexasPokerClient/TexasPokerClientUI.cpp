@@ -336,13 +336,15 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	m_address->setGeometry(QRect(500, 300, 150, 30));
 	m_address->raise();
 	m_address->setText(QStringLiteral("10.12.222.73"));
+	m_address->setPlaceholderText(QStringLiteral("请输入主机IPv4地址"));
 	m_address->show();
 
 	m_port = new QLineEdit(centralWidget);
 	m_port->setObjectName(QStringLiteral("port"));
-	m_port->setGeometry(QRect(680, 300, 40, 30));
+	m_port->setGeometry(QRect(680, 300, 60, 30));
 	m_port->raise();
 	m_port->setText(QStringLiteral("6060"));
+	m_port->setPlaceholderText(QStringLiteral("端口号"));
 	m_port->show();
 
 	m_name = new QLineEdit(centralWidget);
@@ -793,6 +795,12 @@ void TexasPokerClientUI::hideClientPlayerAllAction() const
 
 //槽函数
 void TexasPokerClientUI::connectTcp() {
+	string playerName(m_name->text().toLocal8Bit());				//防止乱码
+	if ((int)playerName.size() <= 0) {
+		QMessageBox::about(this, QStringLiteral("错误"), QStringLiteral("名字不能为空！"));
+		return;
+	}
+
 	QString receivedAddress = m_address->text();
 	QHostAddress honstAddress;
 	if (!honstAddress.setAddress(receivedAddress)){
@@ -810,7 +818,6 @@ void TexasPokerClientUI::connectTcp() {
 		return;
 	}
 	//连接成功，出现自己名字和开始按键，应该由服务器发送
-	string playerName(m_name->text().toLocal8Bit());				//防止乱码
 	commandAndDataToServer toSend(tcpCommandToServer::setPlayerNameCommand, playerName);
 	this->sendCommandAndDataToServer(toSend);	//设置自己的名字
 
@@ -945,7 +952,7 @@ void TexasPokerClientUI::disconnectTcp() {
 void TexasPokerClientUI::aboutSlot() {
 	QMessageBox::about(this
 		, QStringLiteral("德州扑克")
-		, QStringLiteral("<p>Version 1.0<p>Copyright &copy; 2021 <b>wyp zju</b>")
+		, QStringLiteral("<p>Version 1.0<p> <b>Copyright &copy; 2021</b> wyp zju")
 	);
 }
 

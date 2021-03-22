@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_set>
 //#define MAXCARDS (52)
 using namespace std;
 
@@ -7,6 +8,8 @@ enum cardColor { ErrorColor = -1, Club, Diamond, Heart, Spade, CardBackColor, E 
 enum cardNumber { ErrorNumber = -1, Two = 0, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace, CardBackNumber};
 enum cardType {ErrorType = -1, HighCard, OnePair, TwoPairs, ThreeOfKind, Straight, Flush, FullHouse, FourOfKind, StraightFlush, RoyalFlush};
 
+cardNumber to_cardNumber(const int n);
+int to_int(const cardNumber num);
 string to_string(cardType type);
 //牌 包括颜色和数字
 class card {
@@ -44,12 +47,18 @@ public:
 //牌堆，包括52张牌
 class cardHeap {
 private:
-	static const int maxCards = 52;
-	card cardArray[maxCards];	//牌堆数组
-	int topIndex;		//记录当前牌堆顶是数组中第几张牌
+	static const int maxCards = 52;	//最大可能的牌数
+	int numOfCards;					//实际一副牌中牌数（主要为了短牌）
+	//card cardArray[maxCards];		//牌堆数组
+	std::vector<card> cardArray;	
+	int topIndex;					//记录当前牌堆顶是数组中第几张牌
 public:
 	cardHeap();			//初始化函数
 	~cardHeap() = default;
+
+	//删除一些牌
+	bool removeCards(std::unordered_set<int> const& needRemoveCards);
+	bool removeCards(int begin, int end);
 
 	card getCard();		//获取一张牌
 	card getTopCard();	//获取顶部牌

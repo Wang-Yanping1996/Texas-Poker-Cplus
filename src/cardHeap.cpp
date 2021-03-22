@@ -3,6 +3,16 @@
 #include <algorithm>
 #include <functional>
 
+cardNumber to_cardNumber(const int n)
+{
+	return cardNumber(n - 2 + (int)cardNumber::Two); 
+}
+
+int to_int(const cardNumber num)
+{
+	return 2 + (int)num - (int)cardNumber::Two; 
+}
+
 string to_string(cardType type) {
 	if (type == cardType::HighCard)
 		return "高牌";
@@ -51,7 +61,9 @@ bool card::operator>(card const& another) const {	//比较大小，只比较数字
 
 //cardHeap牌堆类
 cardHeap::cardHeap() {	//初始化函数
+	this->numOfCards = cardHeap::maxCards;
 	int nCard = 0;
+	this->cardArray.resize(this->numOfCards);
 	for (cardColor color = cardColor::Club; color <= cardColor::Spade; color = cardColor(color + 1)) {
 		for (cardNumber number = cardNumber::Two; number <= cardNumber::Ace; number = cardNumber(number + 1)) {
 			this->cardArray[nCard++] = card(color, number);
@@ -59,11 +71,40 @@ cardHeap::cardHeap() {	//初始化函数
 	}
 	this->topIndex = 0;
 }
+bool cardHeap::removeCards(std::unordered_set<int> const & needRemoveCards)
+{
+	std::vector<card> newCardArray;
+	for (auto const c : this->cardArray) {
+		const int cNum = to_int(c.getNumber());
+		if (needRemoveCards.find(cNum) == needRemoveCards.end()) {		//不在范围内加入
+			newCardArray.push_back(c);
+		}
+	}
+	this->numOfCards = newCardArray.size();
+	this->cardArray.swap(newCardArray);
+	return true;
+}
+bool cardHeap::removeCards(int begin, int end)
+{
+	if (begin > end) {	//保证end比begin大
+		swap(begin, end);
+	}
+	std::vector<card> newCardArray;
+	for (auto const c : this->cardArray) {
+		const int cNum = to_int(c.getNumber());
+		if (cNum < begin || cNum > end ) {	//不在范围内 加入
+			newCardArray.push_back(c);
+		}
+	}
+	this->numOfCards = newCardArray.size();
+	this->cardArray.swap(newCardArray);
+	return true;
+}
 card cardHeap::getCard() {	//获取一张牌，这里直接获取顶部的牌
 	return this->getTopCard();
 }
 card cardHeap::getTopCard() {	//获取顶部的牌
-	if (this->topIndex >= (int)(maxCards)) {
+	if (this->topIndex >= this->numOfCards) {
 		return card(cardColor::ErrorColor, cardNumber::ErrorNumber);
 	}
 	card res = this->cardArray[this->topIndex];
@@ -71,8 +112,8 @@ card cardHeap::getTopCard() {	//获取顶部的牌
 	return res;
 }
 void cardHeap::shuffle() {	//洗牌	 Knuth-Durstenfeld Shuffle  
-	for (int i = maxCards - 1; i >= 0; --i) {
-		srand((unsigned)time(NULL));
+	srand((unsigned)time(NULL));
+	for (int i = this->numOfCards - 1; i >= 0; --i) {
 		swap(this->cardArray[rand() % (i + 1)], this->cardArray[i]);
 	}
 	this->topIndex = 0;

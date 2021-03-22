@@ -222,6 +222,8 @@ public:
 	void setVirUIPoint(virUI* ui = nullptr) { this->m_ui = ui; };
 
 	void shuffleCardHeap() { this->m_cardHeap.shuffle(); };
+	bool removeCardsInHeap(std::unordered_set<int> const& needRemovedCards) { return this->m_cardHeap.removeCards(needRemovedCards); };
+	bool removeCardsInHeap(int begin, int end) { return this->m_cardHeap.removeCards(begin, end); };
 	void sendCardsToPlayers();
 	void sendCardsToTable();
 

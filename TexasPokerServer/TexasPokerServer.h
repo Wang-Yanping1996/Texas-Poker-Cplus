@@ -12,9 +12,13 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qapplication.h>
+#include <QtWidgets/qradiobutton.h>
+#include <QtWidgets/qbuttongroup.h>
 
 #include "tcpCommand.h"
 #include "tcpPackageAnalyzer.h"
+
+#include <unordered_set>
 //空窗口ui
 class emptyServerUI : public QMainWindow, public virUI {
 	Q_OBJECT
@@ -80,10 +84,15 @@ private:
 	//vector<int> m_headLens;
 	//分离不同client的消息
 	map<QTcpSocket*, int> m_SocketMap;
-	//设定监听端口号
-	QPushButton *m_setPort;
+	//界面显示控件
+	QPushButton *m_setPort;		//设定监听端口号
 	QLineEdit *m_port;
 	QLabel *m_portDisplay;
+
+	QButtonGroup *m_gameMode;	//游戏模式，目前为正常和短牌（排除2~5）
+	QRadioButton *nomalMode;
+	QRadioButton *shortDeckMode;
+	QLabel *m_gameModeDisplay;
 	//原来就有的
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;
