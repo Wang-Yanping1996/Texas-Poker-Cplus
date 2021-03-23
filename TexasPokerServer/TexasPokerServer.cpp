@@ -434,6 +434,11 @@ void emptyServerUI::newConnectionSlot() {
 	commandAndDataToClient setClientIndex(tcpCommandToClient::setClientPlayerIndex, addPlayerIndex);
 	currentClient->write(setClientIndex.getTcpSend());
 
+	//告知客户端 游戏模式
+	std::string modeText(this->m_gameModeDisplay->text().toLocal8Bit());
+	commandAndDataToClient toSend(tcpCommandToClient::setGameMode, modeText);
+	this->sendCommandAndDataToPlayer(addPlayerIndex, toSend);
+
 	vector<player> const& playersArray = this->m_game->getPlayers();
 	//如果游戏已经开始
 	if (this->m_game->getGameHasStarted()) {
@@ -516,10 +521,34 @@ void emptyServerUI::readData()
 
 void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 	QTcpSocket *disconnectClientSocket = qobject_cast<QTcpSocket*>(sender());
-	if (this->m_SocketMap.find(disconnectClientSocket) == this->m_SocketMap.end()) {	//没找到
+	auto disconnectIter = this->m_SocketMap.find(disconnectClientSocket);
+	if (disconnectIter == this->m_SocketMap.end()) {	//没找到
 		return;
 	}
-	const int disconnectPlayerIndex = this->m_SocketMap[disconnectClientSocket];
+	const int disconnectPlayerIndex = disconnectIter->second;
+
+	//如果游戏没开始，取消各玩家准备状态
+	if (!this->m_game->getGameHasStarted()) {
+		vector<player> const& playersArray = this->m_game->getPlayers();
+		for (int i = 0; i < (int)playersArray.size(); ++i) {
+			if (i == disconnectPlayerIndex) {		//断开玩家不做显示
+				continue;
+			}
+			if (playersArray[i].getPlayerType() != playerType::Empty) {
+				//this->m_game->showPlayerName(i);
+				this->m_game->showPlayerChip(i);	//筹码需要显示，因为可能有更新
+				this->hidePlayerActionMessage(i);	//显示 取消准备
+			}
+			if (playersArray[i].getPlayerType() == playerType::OnSitePlayer
+				|| (playersArray[i].getPlayerType() == playerType::Looker && playersArray[i].getChip() > 0)) {
+				this->showBegin(i);					//显示begin按键
+			}
+		}
+		this->m_game->clearNumOfReadyPlayer();		//ready人数清空
+		
+		//this->m_game->begin();
+	}	
+	
 	this->m_game->playerEscape(disconnectPlayerIndex);
 
 	//清理socket相关,Tcpserver需要进行处理吗？
@@ -534,24 +563,7 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 		QApplication::exit();
 	}
 
-	//如果游戏没开始，取消各玩家准备状态
-	if (!this->m_game->getGameHasStarted()) {
-		vector<player> const& playersArray = this->m_game->getPlayers();
-		for (int i = 0; i < (int)playersArray.size(); ++i) {
-			if (playersArray[i].getPlayerType() != playerType::Empty) {
-				//this->m_game->showPlayerName(i);
-				this->m_game->showPlayerChip(i);	//筹码需要显示，因为可能有更新
-				this->hidePlayerActionMessage(i);	//显示 取消准备
-			}
-			if (playersArray[i].getPlayerType() == playerType::OnSitePlayer
-				|| (playersArray[i].getPlayerType() == playerType::Looker && playersArray[i].getChip() > 0)) {
-				this->showBegin(i);					//显示begin按键
-			}
-		}
-		this->m_game->clearNumOfReadyPlayer();		//ready人数清空
-		
-		//this->m_game->begin();
-	}
+	
 	
 }
 
@@ -571,8 +583,8 @@ void emptyServerUI::setPort()
 	}
 
 	//m_gameMode->checkedButton();		//激活的button
-	if (this->nomalMode->isChecked()) {
-		m_gameModeDisplay->setText(QStringLiteral("游戏模式为：正常模式"));		//正常模式 do nothing
+	if (this->nomalMode->isChecked()) {					//正常模式 
+		m_gameModeDisplay->setText(QStringLiteral("游戏模式为：正常模式"));		
 	} else if (this->shortDeckMode->isChecked()) {
 		this->m_game->removeCardsInHeap(2, 5);			//短牌不要2~5
 		m_gameModeDisplay->setText(QStringLiteral("游戏模式为：短牌模式（无2到5）"));

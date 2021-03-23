@@ -200,6 +200,7 @@ void game::nowPlayerFold() {
 	//nowPlayer.setPlayerAction(actionType::Fold);	//已在player.fold()里
 	this->afterPlayerAction();
 }
+//这个函数似乎前半段，基本都是游戏进行中才需要进行的操作，是不是可以加个判断做隔离？
 void game::playerEscape(const int playerIndex)	//仿照fold处理
 {
 	this->hidePlayer(playerIndex);				//直接隐藏

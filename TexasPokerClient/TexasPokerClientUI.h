@@ -130,7 +130,6 @@ private:
 	//聊天框相关
 	QPushButton *chatSendMessage;
 	QListWidget *chatMessageOutput;
-	//QLineEdit *chatMessageInput;
 	ComboBoxWithPress *chatMessageInput;
 
 	//player相关
