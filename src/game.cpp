@@ -203,31 +203,39 @@ void game::nowPlayerFold() {
 //这个函数似乎前半段，基本都是游戏进行中才需要进行的操作，是不是可以加个判断做隔离？
 void game::playerEscape(const int playerIndex)	//仿照fold处理
 {
-	this->hidePlayer(playerIndex);				//直接隐藏
-
-	if (this->getEndPlayerIndex() == playerIndex) {
-		const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);
-		this->setEndPlayerIndex(newEndPlayerIndex);
-	}
+	this->hidePlayer(playerIndex);										//直接隐藏
+	
 	player& escapedPlayer = this->getPlayer(playerIndex);
-	this->addToPot(escapedPlayer.getNowBet());		//已下注加入底池		
-	this->updateEscapedPlayerScore(playerIndex);	//更新逃跑玩家的计分表
+	if (this->m_hasStarted) {											//括号里内容的似乎只在游戏进行时需要执行？
+		if (this->getEndPlayerIndex() == playerIndex) {
+			const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);
+			this->setEndPlayerIndex(newEndPlayerIndex);
+		}
+		if (this->getNowPlayerIndex() == playerIndex) {					//逃跑玩家如果是正在行动玩家，则需要渲染下一位玩家
+			this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//下一位玩家
+			this->nowPlayerRender();															//渲染下一位玩家的界面
+		}
+		this->addToPot(escapedPlayer.getNowBet());						//已下注加入底池		
+		this->updateEscapedPlayerScore(playerIndex);					//更新逃跑玩家的计分表
 
-	this->hidePlayerHandCards(playerIndex);			//隐藏手牌，已在fold中设置为错误
-	this->m_calledPlayersIndex.erase(playerIndex);	//从已call集合中删除
+		this->m_calledPlayersIndex.erase(playerIndex);					//从已call集合中删除
+	}
 
-	escapedPlayer = player();		//建立一个空player代替
+	escapedPlayer = player();											//建立一个空player代替
 
 	if (this->m_hasStarted && this->m_calledPlayersIndex.size() <= 1) {	//游戏进行中 且 没人了，结算
 		this->updatePots();												//更新底池与边池
-
 		this->settle();
+
+		//如果，当前玩家是剩下的唯一玩家，那么隐藏其行动界面。第一个判断条件为了逻辑清晰。
+		if (this->m_calledPlayersIndex.size() <= 1 && this->getNowPlayerIndex() == *(this->m_calledPlayersIndex.begin())) {
+			this->hideNowPlayerAllAction();									
+		}
 		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
 		this->showGameEnd();
-		this->setGameHasStarted(false);	//游戏结束，游戏状态设置为未开始
+		this->setGameHasStarted(false);									//游戏结束，游戏状态设置为未开始
 		return;
 	}
-	//this->afterPlayerAction();	//不渲染了吧
 }
 void game::afterPlayerAction(){									//玩家行动后
 	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
@@ -539,11 +547,12 @@ bool game::nowPlayerRender() {
 
 
 bool game::begin() {
+	//移出到调用begin的位置，更合逻辑
 	//先计算是不是所有玩家都准备了
-	const int numOfPlayer = this->getNumOfPlayers();
+	/*const int numOfPlayer = this->getNumOfPlayers();
 	if (this->m_readyNumOfPlayer < numOfPlayer) {
 		return false;
-	}
+	}*/
 
 	//this->hideBegin();
 	this->m_calledPlayersIndex.clear();

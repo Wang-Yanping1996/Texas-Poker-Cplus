@@ -123,7 +123,12 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 	else if (receivedCommand == tcpCommandToServer::playerReadyCommand) {	//命令from的玩家ready了
 		this->showPlayerActionMessage(fromPlayerIndex, "准备！");
 		this->m_game->addNumOfReadyPlayer();								//ready人数加一，从begin中提出来了
-		this->m_game->begin();												//这里，感觉逻辑上应该是，直接判断人数是否相等，以决定是否进入begin。现在这样逻辑不够清晰
+
+		const int numOfPlayer = this->m_game->getNumOfPlayers();			//在此判断游戏是否开始，更合逻辑
+		const int numOfReadyPlayer = this->m_game->getNumOfReadyPlayer();
+		if (numOfReadyPlayer == numOfPlayer) {
+			this->m_game->begin();											//这里，感觉逻辑上应该是，直接判断人数是否相等，以决定是否进入begin。现在这样逻辑不够清晰
+		}
 	}
 	else if (receivedCommand == tcpCommandToServer::setPlayerNameCommand) {
 		string newPlayerName = dataArray.toStdString();				//玩家想起的名字
@@ -535,8 +540,7 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 				continue;
 			}
 			if (playersArray[i].getPlayerType() != playerType::Empty) {
-				//this->m_game->showPlayerName(i);
-				this->m_game->showPlayerChip(i);	//筹码需要显示，因为可能有更新
+				//this->m_game->showPlayerChip(i);	//游戏没开始，不用更新筹码
 				this->hidePlayerActionMessage(i);	//显示 取消准备
 			}
 			if (playersArray[i].getPlayerType() == playerType::OnSitePlayer
@@ -545,8 +549,6 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 			}
 		}
 		this->m_game->clearNumOfReadyPlayer();		//ready人数清空
-		
-		//this->m_game->begin();
 	}	
 	
 	this->m_game->playerEscape(disconnectPlayerIndex);

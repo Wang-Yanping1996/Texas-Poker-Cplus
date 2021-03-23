@@ -5,12 +5,6 @@
 //	a += 10;
 //}
 
-QString getCardFileName(card const& c) {
-	cardColor color = c.getColor();
-	cardNumber num = c.getNumber();
-	QString cardFileName = QString::fromUtf8("image/poker/") + QString::number((int)color) + QString::fromUtf8("_") + QString::number((int)(num / 10)) + QString::number((int)(num % 10)) + QString::fromUtf8(".jpg");
-	return cardFileName;
-};
 playerWindow::playerWindow(QWidget *centralWidget, int x, int y, int playerIndex) {
 	for (int i = 0; i < player::numOfHandCards; ++i) {
 		playerHandCards[i] = new QLabel(centralWidget);
@@ -563,5 +557,10 @@ void singleGameWindow::nowPlayerFold() {
 }
 void singleGameWindow::gameBegin() {
 	this->m_game->addNumOfReadyPlayer();
-	this->m_game->begin();
+
+	const int numOfPlayer = this->m_game->getNumOfPlayers();			//在此判断游戏是否开始，更合逻辑
+	const int numOfReadyPlayer = this->m_game->getNumOfReadyPlayer();
+	if (numOfReadyPlayer == numOfPlayer) {
+		this->m_game->begin();											//这里，感觉逻辑上应该是，直接判断人数是否相等，以决定是否进入begin。现在这样逻辑不够清晰
+	}
 }

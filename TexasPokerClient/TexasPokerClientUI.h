@@ -28,7 +28,6 @@
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
 
-QString getCardFileName(card const& c);
 vector<card> QByteArrayToCards(QByteArray const& qArray);
 //class testUi : public QMainWindow
 //{
@@ -50,20 +49,6 @@ vector<card> QByteArrayToCards(QByteArray const& qArray);
 //	void connectTcp();
 //
 //};
-
-//继承QComboBox 以 实现 回车信号
-class ComboBoxWithPress : public QComboBox
-{
-	Q_OBJECT
-public:
-	explicit ComboBoxWithPress(QWidget* parent = nullptr);
-
-protected:
-	void keyReleaseEvent(QKeyEvent *e);
-
-signals:
-	void keyEnterReleased();
-};
 
 
 class playerClient : public QWidget {
@@ -122,7 +107,7 @@ public:
 
 private:
 	int commonCardsPosition[game::maxNumOfCommonCards][2] = { { 300,260 },{ 390,260 },{ 480,260 },{ 590,260 },{ 700,260 } };
-	int playerPosition[game::maxNumOfPlayers][2] = { { 470,430 },{ 750,430 },{ 940,190 },{ 750,0 },{ 470,0 },{ 170,0 },{ 0,190 },{ 170,430 } };
+	int playerPosition[game::maxNumOfPlayers][2] = { { 470,430 },{ 750,430 },{ 940,190 },{ 750,0 },{ 470,0 },{ 170,0 },{ 5,190 },{ 170,430 } };
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;
 	QWidget *centralWidget;
@@ -130,7 +115,7 @@ private:
 	//聊天框相关
 	QPushButton *chatSendMessage;
 	QListWidget *chatMessageOutput;
-	ComboBoxWithPress *chatMessageInput;
+	QComboBox *chatMessageInput;
 
 	//player相关
 	playerClient *players[game::maxNumOfPlayers];

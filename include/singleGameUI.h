@@ -15,7 +15,7 @@
 #include <QtWidgets/QMessageBox>
 #include "game.h"
 
-QString getCardFileName(card const& c);
+//QString getCardFileName(card const& c);
 
 class playerWindow : public QWidget {
 	Q_OBJECT

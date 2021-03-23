@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <unordered_set>
+
+#include <QtWidgets/QMainWindow>
 //#define MAXCARDS (52)
 using namespace std;
 
@@ -31,6 +33,7 @@ public:
 	bool operator < (card const& another) const;				//比较大小，只比较数字
 
 };
+QString getCardFileName(card const& c);
 
 //class nCards{
 //private:

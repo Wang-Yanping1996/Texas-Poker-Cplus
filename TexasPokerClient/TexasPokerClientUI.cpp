@@ -1,15 +1,5 @@
 #include "TexasPokerClientUI.h"
 
-QString getCardFileName(card const& c) {
-	cardColor color = c.getColor();
-	cardNumber num = c.getNumber();
-	if (color == cardColor::CardBackColor&&num == cardNumber::CardBackNumber) {
-		QString cardFileName = QString::fromUtf8("image/poker/") + QString::fromUtf8("back") + QString::fromUtf8(".jpg");
-		return cardFileName;
-	}
-	QString cardFileName = QString::fromUtf8("image/poker/") + QString::number((int)color) + QString::fromUtf8("_") + QString::number((int)(num / 10)) + QString::number((int)(num % 10)) + QString::fromUtf8(".jpg");
-	return cardFileName;
-}
 vector<card> QByteArrayToCards(QByteArray const & qArray)
 {
 	QByteArray dataArray = qArray;
@@ -22,21 +12,28 @@ vector<card> QByteArrayToCards(QByteArray const & qArray)
 	}
 	return cards;
 }
-
-ComboBoxWithPress::ComboBoxWithPress(QWidget *parent) : QComboBox(parent)
+//CSDN找的函数
+QString elidedLineText(QWidget *pWidget, QString strText)
 {
-
-}
-
-void ComboBoxWithPress::keyReleaseEvent(QKeyEvent *e)
-{
-	if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return)
-	{
-		qDebug() << "enter released";
-		emit keyEnterReleased();
+	QFontMetrics fontMetrics(pWidget->font());
+	QStringList strListLine;
+	const int margin = fontMetrics.width("中");
+	//满行的都加进列表
+	for (int i = 0; i < strText.size(); i++) {
+		if (fontMetrics.width(strText.left(i)) >= pWidget->width() - margin) { 
+			strListLine.append(strText.left(i));
+			strText = strText.right(strText.size() - i);
+			i = 0;
+		}
 	}
-}
+	//最后不足一行的也加进去
+	if (!strText.isEmpty()) {
+		strListLine.append(strText);
+	}
+	QString strResult = strListLine.join("\n");
 
+	return strResult;
+}
 
 playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex) {
 	for (int i = 0; i < player::numOfHandCards; ++i) {
@@ -91,6 +88,7 @@ playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex
 	sidePot->hide();
 
 	playerName->setText(QStringLiteral("玩家1"));
+	//playerName->setAlignment(Qt::AlignCenter);
 	playerChip->setText(QStringLiteral("筹码："));
 	actionMessage->setText(QStringLiteral("玩家行为："));
 	sidePot->setText(QStringLiteral("边池："));
@@ -614,8 +612,9 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 		this->showPlayerDealer(dealerIndex);
 	}
 	else if (receivedCommand == tcpCommandToClient::showClientChatMessage) {
-		const string chatMessage = dataArray.toStdString();
-		this->chatMessageOutput->addItem(QString::fromLocal8Bit(chatMessage.data()));
+		QString chatMessage = QString::fromLocal8Bit(dataArray.toStdString().data());
+		chatMessage = elidedLineText(chatMessageOutput, chatMessage);
+		this->chatMessageOutput->addItem(chatMessage);
 		this->chatMessageOutput->setCurrentRow(chatMessageOutput->count() - 1);
 	}
 	else if (receivedCommand == tcpCommandToClient::setGameMode) {
@@ -836,7 +835,7 @@ void TexasPokerClientUI::connectTcp() {
 
 	//新增聊天框
 	chatMessageOutput = new QListWidget(centralWidget);
-	chatMessageInput = new ComboBoxWithPress(centralWidget);
+	chatMessageInput = new QComboBox(centralWidget);
 	chatSendMessage = new QPushButton(centralWidget);
 
 	chatMessageOutput->setGeometry(QRect(1250, 0, 330, 500));
@@ -847,8 +846,9 @@ void TexasPokerClientUI::connectTcp() {
 	chatMessageInput->show();
 	chatSendMessage->show();
 
-	chatMessageOutput->setWordWrap(true);
+	//chatMessageOutput->setWordWrap(true);
 	chatMessageOutput->setTextElideMode(Qt::ElideNone);
+	//chatMessageOutput->setViewMode(QListView::IconMode);
 
 	chatMessageInput->setEditable(true);
 	chatMessageInput->addItem(QStringLiteral("不要走，决战到天亮。"));
@@ -872,7 +872,7 @@ void TexasPokerClientUI::connectTcp() {
 
 	connect(chatSendMessage, SIGNAL(clicked()), this, SLOT(chatSendMessageSlot()));
 	connect(chatMessageInput, SIGNAL(activated(QString)), this, SLOT(chatSendMessageSlot()));
-	connect(chatMessageInput, SIGNAL(keyEnterReleased()), this, SLOT(chatSendMessageSlot()));
+	connect(chatMessageInput->lineEdit(), SIGNAL(returnPressed()), this, SLOT(chatSendMessageSlot()));		//绑定自身QLineEdit的回车信号到发送函数上
 }
 void TexasPokerClientUI::nowPlayerRaise()
 {
@@ -1004,8 +1004,11 @@ void TexasPokerClientUI::chatSendMessageSlot() {
 	}
 	string clientPlayerName(this->players[0]->playerName->text().toLocal8Bit());
 	string totalMessage = clientPlayerName + "：" + clientChatMessage;
-	
-	this->chatMessageOutput->addItem(QString::fromLocal8Bit(totalMessage.data()));
+
+	QString totalMessageQString = QString::fromLocal8Bit(totalMessage.data());
+	//insertReturn(totalMessageQString, chatMessageOutput->width());
+	totalMessageQString = elidedLineText(chatMessageOutput, totalMessageQString);
+	this->chatMessageOutput->addItem(totalMessageQString);
 	this->chatMessageOutput->setCurrentRow(chatMessageOutput->count() - 1);
 
 	commandAndDataToServer toSend(tcpCommandToServer::showChatMessage, totalMessage);

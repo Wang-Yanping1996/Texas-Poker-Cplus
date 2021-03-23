@@ -59,6 +59,17 @@ bool card::operator>(card const& another) const {	//比较大小，只比较数字
 	return this->m_number > another.m_number;
 }
 
+QString getCardFileName(card const& c) {
+	cardColor color = c.getColor();
+	cardNumber num = c.getNumber();
+	if (color == cardColor::CardBackColor&&num == cardNumber::CardBackNumber) {
+		QString cardFileName = QString::fromUtf8("image/poker/") + QString::fromUtf8("back") + QString::fromUtf8(".jpg");
+		return cardFileName;
+	}
+	QString cardFileName = QString::fromUtf8("image/poker/") + QString::number((int)color) + QString::fromUtf8("_") + QString::number((int)(num / 10)) + QString::number((int)(num % 10)) + QString::fromUtf8(".jpg");
+	return cardFileName;
+}
+
 //cardHeap牌堆类
 cardHeap::cardHeap() {	//初始化函数
 	this->numOfCards = cardHeap::maxCards;
