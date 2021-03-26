@@ -25,6 +25,8 @@ public:
 	~card() = default;
 
 	static QString getCardFileName(card const& c);
+	static std::string cardToString(card const& c);
+
 	cardColor getColor() const { return this->m_color; };		//获取颜色
 	cardNumber getNumber() const { return this->m_number; };	//获取数字
 	bool isCardVailid()const { return this->m_color != cardColor::ErrorColor&&this->m_number != cardNumber::ErrorNumber; };

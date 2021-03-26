@@ -165,7 +165,6 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	:QMainWindow(parent)
 {
 
-
 	setWindowTitle(QStringLiteral("德州扑克"));
 	if (this->objectName().isEmpty())
 		this->setObjectName(QStringLiteral("TexasPoker"));
@@ -377,6 +376,21 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 	connect(check, SIGNAL(clicked()), this, SLOT(nowPlayerCheck()));
 	connect(call, SIGNAL(clicked()), this, SLOT(nowPlayerCall()));
 	connect(fold, SIGNAL(clicked()), this, SLOT(nowPlayerFold()));
+
+#ifdef PRINT_RECORD
+	try {
+		m_recorder = spdlog::rotating_logger_mt("GameRecord", "logs\\牌谱.txt", 1024 * 1024 * 5, 1);
+	}
+	catch (const spdlog::spdlog_ex &ex) {
+		QMessageBox::about(this, QStringLiteral("错误"), QStringLiteral("创建日志失败"));
+		QApplication::exit();
+	}
+
+	if (m_recorder != nullptr) {
+		m_recorder->set_level(spdlog::level::info);
+		m_recorder->info("日志创建成功！");
+	}
+#endif // PRINT_RECORD
 }
 
 bool TexasPokerClientUI::getMacByGetAdaptersInfo(){
@@ -644,6 +658,18 @@ void TexasPokerClientUI::showCommonCards(vector<card> const & needShowCommonCard
 		//this->commonCards[i_card]->setPixmap(QPixmap());
 		this->commonCards[i_card]->hide();
 	}
+#ifdef PRINT_RECORD
+	std::string msg;
+	for (int i_card = 0; i_card < (int)needShowCommonCards.size(); ++i_card) {
+		if (needShowCommonCards[i_card].isCardVailid()) {
+			msg += card::cardToString(needShowCommonCards[i_card]) + " ";
+		}
+	}
+	if ((int)msg.size() > 0) {
+		m_recorder->info("公共牌 = " + msg);
+	}
+#endif // PRINT_RECORD
+
 }
 
 void TexasPokerClientUI::hideCommonCards() const {
@@ -665,6 +691,18 @@ void TexasPokerClientUI::showRound(gameRound nowRound) const {
 	else {
 		this->hideRound();
 	}
+#ifdef PRINT_RECORD
+	if (nowRound == gameRound::Flop) {
+		m_recorder->info("gameRound = 翻牌");
+	}
+	else if (nowRound == gameRound::Turn) {
+		m_recorder->info("gameRound = 转牌");
+	}
+	else if (nowRound == gameRound::River) {
+		m_recorder->info("gameRound = 河牌");
+	}
+	else {}
+#endif // PRINT_RECORD
 }
 
 void TexasPokerClientUI::hideRound() const {
@@ -677,6 +715,10 @@ void TexasPokerClientUI::showPot(const int potNum) const {
 	QString showText = QStringLiteral("底池：") + QString::number(potNum);
 	this->pot->setText(showText);
 	this->pot->show();
+#ifdef PRINT_RECORD
+	m_recorder->info("底池 = " + std::to_string(potNum));
+#endif // PRINT_RECORD
+
 }
 
 void TexasPokerClientUI::hidePot() const {
@@ -689,6 +731,19 @@ void TexasPokerClientUI::hidePot() const {
 void TexasPokerClientUI::showPlayerHandCards(const int playerIndex, vector<card> const& handCards) const {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
 	this->players[playerIndexInClient]->showHandCards(handCards);
+#ifdef PRINT_RECORD
+	std::string msg;
+	for (int i_card = 0; i_card < (int)handCards.size(); ++i_card) {
+		if (handCards[i_card].isCardVailid()) {
+			msg += card::cardToString(handCards[i_card]) + " ";
+		}
+	}
+	if ((int)msg.size() > 0) {
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，手牌 = " + msg);
+		m_recorder->flush();
+	}
+#endif // PRINT_RECORD
+
 }
 void TexasPokerClientUI::showPlayerName(const int playerIndex, string const& playerName) const {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
@@ -700,13 +755,76 @@ void TexasPokerClientUI::showPlayerChip(const int playerIndex, const int chip) c
 }
 void TexasPokerClientUI::showPlayerActionMessage(const int playerIndex, string const & actionMessage) const {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
-	this->players[playerIndexInClient]->showPlayerActionMessage(QString::fromLocal8Bit(actionMessage.data()));
+	QString shownMessage = QString::fromLocal8Bit(actionMessage.data());
+	this->players[playerIndexInClient]->showPlayerActionMessage(shownMessage);
+#ifdef PRINT_RECORD
+	//QString sss = QStringLiteral("看牌");	//for test
+	//int a = sss.length();
+	//sss += QStringLiteral("：200");
+	//int b = QStringLiteral("看牌：").length();
+	//sss = sss.remove(0, QStringLiteral("看牌：").length());
+	if (shownMessage.left(QStringLiteral("allin").length()) == QStringLiteral("allin")) {
+		shownMessage = shownMessage.remove(0, QStringLiteral("allin:").length());
+		const int allinMoney = shownMessage.toInt();
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，allin = " + std::to_string(allinMoney));
+	}
+	else if (shownMessage.left(QStringLiteral("跟注").length()) == QStringLiteral("跟注")) {
+		shownMessage = shownMessage.remove(0, QStringLiteral("跟注：").length());
+		const int callMoney = shownMessage.toInt();
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，跟注 = " + std::to_string(callMoney));
+	}
+	else if (shownMessage.left(QStringLiteral("看牌").length()) == QStringLiteral("看牌")) {
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，看牌");
+	}
+	else if (shownMessage.left(QStringLiteral("加注至").length()) == QStringLiteral("加注至")) {
+		shownMessage = shownMessage.remove(0, QStringLiteral("加注至：").length());
+		const int raiseMoney = shownMessage.toInt();
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，加注至 = " + std::to_string(raiseMoney));
+	}
+	else if (shownMessage.left(QStringLiteral("弃牌").length()) == QStringLiteral("弃牌")) {
+		m_recorder->info("玩家编号=" + std::to_string(playerIndex) + "，弃牌" );
+	}
+	else if (shownMessage.left(QStringLiteral("牌型：").length()) == QStringLiteral("牌型：")) {
+		std::string msg = "玩家编号 = " + std::to_string(playerIndex) + "，牌型 = ";
+		
+		shownMessage = shownMessage.remove(0, QStringLiteral("牌型：").length());
+		QString cardTypeMsg;
+		for (int i = 0; shownMessage[i] != '\n'; i++) {
+			cardTypeMsg += shownMessage[i];
+		}
+		shownMessage = shownMessage.remove(0, cardTypeMsg.length() + 1);
+		msg += string(cardTypeMsg.toLocal8Bit()) + "，";
+		if (shownMessage.left(QStringLiteral("玩家赢得").length()) == QStringLiteral("玩家赢得")) {
+			shownMessage = shownMessage.remove(0, QStringLiteral("玩家赢得：").length());
+			msg += "玩家赢得 = " + string(shownMessage.toLocal8Bit());
+		}
+		else if (shownMessage.left(QStringLiteral("玩家输了").length()) == QStringLiteral("玩家输了")) {
+			msg += "玩家输了";
+		}
+		else {}
+		m_recorder->info(msg);
+	}
+	else if (shownMessage.left(QStringLiteral("玩家赢得").length()) == QStringLiteral("玩家赢得")) {
+		shownMessage = shownMessage.remove(0, QStringLiteral("玩家赢得：").length());
+		m_recorder->info("玩家赢得 = " + string(shownMessage.toLocal8Bit()));
+	}
+	else if (shownMessage.left(QStringLiteral("玩家输了").length()) == QStringLiteral("玩家输了")) {
+		m_recorder->info("玩家输了");
+	}
+	else {}
+	m_recorder->flush();
+#endif // PRINT_RECORD
+
 }
 
 void TexasPokerClientUI::showPlayerSidePot(const int playerIndex, const int money) const
 {
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
 	this->players[playerIndexInClient]->showSidePot(money);
+#ifdef PRINT_RECORD
+	m_recorder->info("玩家编号=" + std::to_string(playerIndex) + "边池=" + std::to_string(money));
+#endif 
+
 }
 
 void TexasPokerClientUI::showPlayerDealer(const int playerIndex) const
@@ -714,6 +832,27 @@ void TexasPokerClientUI::showPlayerDealer(const int playerIndex) const
 	const int playerIndexInClient = (playerIndex - this->m_clientPlayerIndex + game::maxNumOfPlayers) % game::maxNumOfPlayers;
 	this->dealer->setGeometry(QRect(80 + playerPosition[playerIndexInClient][0], 180 + playerPosition[playerIndexInClient][1], 70, 23));
 	this->dealer->show();
+
+#ifdef PRINT_RECORD
+	m_recorder->info("游戏开始！");
+	m_recorder->info("参与玩家为：");
+	for (int i = 0; i < game::maxNumOfPlayers; i++) {
+		auto const& p = this->players[i];
+		if (p == nullptr)
+			continue;
+		QString chipMsg = p->playerChip->text();
+		chipMsg = chipMsg.remove(0, QStringLiteral("筹码：").length());
+		const int chip = chipMsg.toInt();
+		if (p->playerName->isVisible() && chip > 0) {
+			m_recorder->info("玩家编号 = " + std::to_string((i + this->m_clientPlayerIndex) % game::maxNumOfPlayers) +
+				"，姓名 = " + std::string(p->playerName->text().toLocal8Bit()) +
+				"，带入 = " + std::to_string(chip));
+		}
+	}
+	m_recorder->info("dealer编号 = " + std::to_string(playerIndex));
+	//m_recorder->flush();
+#endif // PRINT_RECORD
+
 }
 
 //player hide方法

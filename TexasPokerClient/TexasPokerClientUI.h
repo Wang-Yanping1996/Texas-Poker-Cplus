@@ -1,5 +1,11 @@
 #pragma once
 
+#define PRINT_RECORD
+
+#ifdef PRINT_RECORD
+#include "spdlog\sinks\rotating_file_sink.h"
+#endif
+
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/qpushbutton.h>
 #include <QtWidgets/qspinbox.h>
@@ -148,6 +154,10 @@ private:
 	int m_clientPlayerIndex;
 	
 	string macAddress;			//本机第一个mac地址
+#ifdef PRINT_RECORD
+	std::shared_ptr<spdlog::logger> m_recorder;
+#endif // PRINT_RECORD
+
 public:
 	//获取第一个以太网卡mac地址
 	bool getMacByGetAdaptersInfo();

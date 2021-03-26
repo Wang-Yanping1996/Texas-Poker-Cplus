@@ -70,6 +70,47 @@ QString card::getCardFileName(card const& c) {
 	return cardFileName;
 }
 
+std::string card::cardToString(card const& c) {
+	std::string res;
+	cardColor color = c.getColor();
+	switch (color)
+	{
+	case Club:
+		res += 'C';
+		break;
+	case Diamond:
+		res += 'D';
+		break;
+	case Heart:
+		res += 'H';
+		break;
+	case Spade:
+		res += 'S';
+		break;
+	default:
+		break;
+	}
+	const int actualNum = to_int(c.getNumber());
+	if (actualNum <= 10 && actualNum >= 2) {
+		res += std::to_string(actualNum);
+	}
+	else if (actualNum == 11) {
+		res += 'J';
+	}
+	else if (actualNum == 12) {
+		res += 'Q';
+	}
+	else if (actualNum == 13) {
+		res += 'K';
+	}
+	else if (actualNum == 14) {
+		res += 'A';
+	}
+	else {
+		res = "未知";
+	}
+	return res;
+}
 //cardHeap牌堆类
 cardHeap::cardHeap() {	//初始化函数
 	this->numOfCards = cardHeap::maxCards;

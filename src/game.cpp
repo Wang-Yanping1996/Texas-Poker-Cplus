@@ -570,19 +570,19 @@ bool game::begin() {
 
 	this->m_readyNumOfPlayer = 0;
 
-	this->m_round = Start;		//开始
+	this->m_round = Start;			//开始
 	this->setGameHasStarted(true);	//游戏状态设为开始
-	this->updateDealer();		//更新dealer
-	this->showDealer();			//在客户端显示dealer
+	this->updateDealer();			//更新dealer
+	this->showDealer();				//在客户端显示dealer
 
-	//this->initPlayersState();	//初始化玩家状态
-	this->clearCommonCards();	//清空桌上的牌
+	//this->initPlayersState();		//初始化玩家状态
+	this->clearCommonCards();		//清空桌上的牌
 	this->clearPot();
-	this->clearSidePot();		//清空边池
+	this->clearSidePot();			//清空边池
 	this->hideAllPlayerSidePot();	//隐藏边池，可以不写？
-	this->shuffleCardHeap();	//洗牌
-	this->renderGame();			//渲染游戏界面
-	this->nextRound();			//进行下一轮
+	this->shuffleCardHeap();		//洗牌
+	//this->renderGame();				//渲染游戏界面		//这一步似乎不必要，因为nextRound里会渲染的
+	this->nextRound();				//进行下一轮
 	return true;
 }
 
