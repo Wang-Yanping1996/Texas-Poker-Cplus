@@ -150,6 +150,11 @@ void emptyServerUI::analyzeCommand(QByteArray received, const int fromPlayerInde
 		if (newPlayerName != "姓名："&&newPlayerName != "姓名") {					//不让起的名字，可以考虑给client返回提示
 			this->m_game->setPlayerName(fromPlayerIndex, noRepeatName);
 			this->showPlayerName(fromPlayerIndex, noRepeatName);
+
+			//聊天框显示有人进入，正常应该放在newConnect处，但是没有名字，考虑到目前只在进入时改名，就放在这里了
+			commandAndDataToClient toSend(tcpCommandToClient::showClientChatMessage, "玩家：" + noRepeatName + " 进入了游戏！");
+			this->sendCommandAndDataToAll(toSend);
+
 		}
 	}
 	else if (receivedCommand == tcpCommandToServer::setClientMacAddressCommand) {
@@ -443,7 +448,7 @@ void emptyServerUI::newConnectionSlot() {
 	std::string modeText(this->m_gameModeDisplay->text().toLocal8Bit());
 	commandAndDataToClient toSend(tcpCommandToClient::setGameMode, modeText);
 	this->sendCommandAndDataToPlayer(addPlayerIndex, toSend);
-
+	
 	vector<player> const& playersArray = this->m_game->getPlayers();
 	//如果游戏已经开始
 	if (this->m_game->getGameHasStarted()) {
@@ -551,6 +556,11 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 		this->m_game->clearNumOfReadyPlayer();		//ready人数清空
 	}	
 	
+	//聊天框显示有人进入
+	commandAndDataToClient toSend(tcpCommandToClient::showClientChatMessage, "玩家：" + this->m_game->getPlayer(disconnectPlayerIndex).getName() + " 离开了游戏！");
+	this->sendCommandAndDataToAllExcept(disconnectPlayerIndex, toSend);
+
+
 	this->m_game->playerEscape(disconnectPlayerIndex);
 
 	//清理socket相关,Tcpserver需要进行处理吗？
@@ -564,9 +574,6 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 	if (this->m_SocketMap.size() < 1) {		//少于1人则服务器退出
 		QApplication::exit();
 	}
-
-	
-	
 }
 
 void emptyServerUI::setPort()

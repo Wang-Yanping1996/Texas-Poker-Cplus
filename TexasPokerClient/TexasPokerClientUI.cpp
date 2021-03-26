@@ -97,7 +97,7 @@ playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex
 void playerClient::showHandCards(vector<card> const& c) const {
 	for (int i_card = 0; i_card < (int)c.size(); ++i_card) {
 		if (c[i_card].isCardVailid()) {
-			QString cardFileName = getCardFileName(c[i_card]);
+			QString cardFileName = card::getCardFileName(c[i_card]);
 			this->playerHandCards[i_card]->setPixmap(cardFileName);
 			this->playerHandCards[i_card]->show();
 		}
@@ -208,7 +208,7 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 		commonCards[i_card] = new QLabel(centralWidget);
 		commonCards[i_card]->setObjectName(QStringLiteral("playerHandCard1_3"));
 		commonCards[i_card]->setGeometry(QRect(commonCardsPosition[i_card][0], commonCardsPosition[i_card][1], 70, 100));
-		QString cardFileName = getCardFileName(card(Club, Three));
+		QString cardFileName = card::getCardFileName(card(ErrorColor, ErrorNumber));
 		commonCards[i_card]->setPixmap(QPixmap(cardFileName));
 		commonCards[i_card]->raise();
 		commonCards[i_card]->hide();
@@ -631,7 +631,7 @@ void TexasPokerClientUI::sendCommandAndDataToServer(commandAndDataToServer toSen
 void TexasPokerClientUI::showCommonCards(vector<card> const & needShowCommonCards) const {
 	for (int i_card = 0; i_card < (int)needShowCommonCards.size(); ++i_card) {
 		if (needShowCommonCards[i_card].isCardVailid()) {
-			QString cardFileName = getCardFileName(needShowCommonCards[i_card]);
+			QString cardFileName = card::getCardFileName(needShowCommonCards[i_card]);
 			this->commonCards[i_card]->setPixmap(QPixmap(cardFileName));
 			this->commonCards[i_card]->show();
 		}

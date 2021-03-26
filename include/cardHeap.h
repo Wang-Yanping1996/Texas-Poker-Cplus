@@ -24,6 +24,7 @@ public:
 	card& operator = (card const& another);		//赋值																		
 	~card() = default;
 
+	static QString getCardFileName(card const& c);
 	cardColor getColor() const { return this->m_color; };		//获取颜色
 	cardNumber getNumber() const { return this->m_number; };	//获取数字
 	bool isCardVailid()const { return this->m_color != cardColor::ErrorColor&&this->m_number != cardNumber::ErrorNumber; };
@@ -33,7 +34,7 @@ public:
 	bool operator < (card const& another) const;				//比较大小，只比较数字
 
 };
-QString getCardFileName(card const& c);
+//QString getCardFileName(card const& c);
 
 //class nCards{
 //private:

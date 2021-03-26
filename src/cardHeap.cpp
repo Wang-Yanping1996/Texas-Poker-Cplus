@@ -59,7 +59,7 @@ bool card::operator>(card const& another) const {	//比较大小，只比较数字
 	return this->m_number > another.m_number;
 }
 
-QString getCardFileName(card const& c) {
+QString card::getCardFileName(card const& c) {
 	cardColor color = c.getColor();
 	cardNumber num = c.getNumber();
 	if (color == cardColor::CardBackColor&&num == cardNumber::CardBackNumber) {
