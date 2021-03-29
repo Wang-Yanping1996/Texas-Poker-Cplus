@@ -1,4 +1,10 @@
 #pragma once
+#define DEBUG_MESSAGE
+
+#ifdef DEBUG_MESSAGE
+#include "spdlog\sinks\basic_file_sink.h"
+#endif
+
 #include "cardHeap.h"
 #include "player.h"
 #include <string>
@@ -125,6 +131,11 @@ private:
 	//计分表添加
 	unordered_map<string, int> m_macAddressToScoreChartIndex;
 	QStandardItemModel* m_scoreChart;	//各玩家得分记录
+#ifdef DEBUG_MESSAGE
+public:
+	std::shared_ptr<spdlog::logger> m_debugMessage;
+#endif // PRINT_RECORD
+
 public:
 	game(string gameID = "No ID",
 		vector<player> players = vector<player>(maxNumOfPlayers),
@@ -166,6 +177,13 @@ public:
 
 		m_scoreChart->setHorizontalHeaderLabels({ QStringLiteral("玩家名"), QStringLiteral("总带入"), QStringLiteral("当前总筹码"), QStringLiteral("场上筹码"), QStringLiteral("净胜") });
 		m_macAddressToScoreChartIndex.clear();
+#ifdef DEBUG_MESSAGE
+		m_debugMessage = spdlog::basic_logger_mt("debugMessage", "logs/debugMessage.txt");
+		
+		m_debugMessage->set_level(spdlog::level::debug);
+		m_debugMessage->debug("创建debug日志成功！");
+		m_debugMessage->debug("开始输出日志");
+#endif // PRINT_RECORD
 	};
 	~game() = default;
 	

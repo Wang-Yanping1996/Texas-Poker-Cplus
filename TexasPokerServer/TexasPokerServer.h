@@ -1,4 +1,5 @@
 #pragma once
+
 #include <QtWidgets/qmainwindow.h>
 #include <QtNetwork/qtcpserver.h>
 #include <QtNetwork/qtcpsocket.h>
@@ -72,6 +73,9 @@ public:
 	//后添加的show牌方法，在玩家2的client上show玩家1的牌
 	virtual void showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const& handCards)const;
 
+	//analyze部分抽出的函数
+	void setPlayerUniqueName(const int playerIndex, const string& playerName);
+	void setPlayerUniqueMacAddress(const int playerIndex, const string& macAddress);
 private:
 	game *m_game;		//game实体
 
@@ -98,6 +102,7 @@ private:
 	QToolBar *mainToolBar;
 	QWidget *centralWidget;
 	QStatusBar *statusBar;
+
 private slots:
 	void newConnectionSlot();
 	void readData();

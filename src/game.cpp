@@ -82,6 +82,10 @@ int game::addNewPlayer(string const& playerName)
 		this->m_players[addPlayerIndex] = player(playerType::Looker, playerName, { card(), card() }, this->initChip);
 	else					//游戏未开始，进入者直接上场
 		this->m_players[addPlayerIndex] = player(playerType::OnSitePlayer, playerName, { card(), card() }, this->initChip);
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::addNewPlayer is called!\" 添加新玩家，编号 = " + std::to_string(addPlayerIndex));
+#endif // DEBUG_MESSAGE
+
 	return addPlayerIndex;
 }
 
@@ -124,6 +128,9 @@ void game::sendCardsToPlayers() {
 		card card2 = this->m_cardHeap.getCard();
 		nowplayer.setHandCards(vector<card>{card1, card2});
 	}
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::sendCardsToPlayers is called!\" 给玩家发牌");
+#endif // DEBUG_MESSAGE
 }
 void game::sendCardsToTable() {
 	if (this->m_round == PreFlop) {	//翻前
@@ -145,10 +152,30 @@ void game::sendCardsToTable() {
 		//this->m_commonCards[4] = this->m_cardHeap.getCard();
 		this->m_commonCards.push_back(this->m_cardHeap.getCard());
 	}
+#ifdef DEBUG_MESSAGE
+	std::string msg = "\"game::sendCardsToTable is called!\" 给桌上发牌，当前回合 = ";
+	if (this->m_round == PreFlop) {
+		msg += "翻前";
+	}
+	else if (this->m_round == Flop) {
+		msg += "翻牌";
+	}
+	else if (this->m_round == Turn) {
+		msg += "转牌";
+	}
+	else if (this->m_round == River) {
+		msg += "河牌";
+	}
+	m_debugMessage->debug(msg);
+#endif // DEBUG_MESSAGE
 }
 
 //四个当前玩家的动作，可以将玩家按键全部绑定至此
 void game::nowPlayerRaise(const int raiseTo) {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerRaise is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "，加注至 = " + std::to_string(raiseTo));
+#endif // DEBUG_MESSAGE
+
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	if (raiseTo >= nowPlayer.getChip() + nowPlayer.getNowBet()) {	//是否是allin
 		this->nowPlayerAllin();
@@ -166,6 +193,10 @@ void game::nowPlayerRaise(const int raiseTo) {
 	//this->nowPlayerRender();															//渲染下一位玩家的界面
 }
 void game::nowPlayerAllin() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerAllin is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "，allin");
+#endif // DEBUG_MESSAGE	
+	
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	const int remainderChip = nowPlayer.getChip();
 	const int nowBet = nowPlayer.getNowBet();
@@ -178,21 +209,32 @@ void game::nowPlayerAllin() {
 		this->setMinBet(allMoney);		//更新现在最小下注
 	}
 	this->afterPlayerAction();
-
 }
 void game::nowPlayerCall() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerCall is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "，跟注");
+#endif // DEBUG_MESSAGE	
+	
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	nowPlayer.add(this->m_minBet);		//就是玩家加到最小bet
 	nowPlayer.setPlayerAction(actionType::Call);
 	this->afterPlayerAction();
 }
 void game::nowPlayerCheck() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerCheck is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "，看牌 ");
+#endif // DEBUG_MESSAGE
+
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	//nowPlayer.add(0);		//加到0，可以删了
 	nowPlayer.setPlayerAction(actionType::Check);
 	this->afterPlayerAction();
 }
 void game::nowPlayerFold() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerFold is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "，弃牌 ");
+#endif // DEBUG_MESSAGE	
+	
 	player& nowPlayer = this->getPlayer(this->m_nowPlayerIndex);
 	nowPlayer.fold();
 	this->hideNowPlayerHandCards();			//隐藏手牌，已在fold中设置为错误
@@ -203,6 +245,16 @@ void game::nowPlayerFold() {
 //这个函数似乎前半段，基本都是游戏进行中才需要进行的操作，是不是可以加个判断做隔离？
 void game::playerEscape(const int playerIndex)	//仿照fold处理
 {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::playerEscape is called!\" 玩家 = " + std::to_string(playerIndex) + "，逃跑 ");
+	if (this->m_hasStarted) {
+		m_debugMessage->debug("当前游戏正在进行中");
+	}
+	else {
+		m_debugMessage->debug("当前游戏未开始");
+	}
+#endif // DEBUG_MESSAGE	
+
 	this->hidePlayer(playerIndex);										//直接隐藏
 	
 	player& escapedPlayer = this->getPlayer(playerIndex);
@@ -238,7 +290,11 @@ void game::playerEscape(const int playerIndex)	//仿照fold处理
 	}
 }
 void game::afterPlayerAction(){									//玩家行动后
-	this->nowPlayerActionComplete();	//当前玩家结束行动渲染
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::afterPlayerAction is called!\" 玩家 = " + std::to_string(m_nowPlayerIndex) + " 行动结束");
+#endif // DEBUG_MESSAGE	
+
+	this->nowPlayerActionComplete();							//当前玩家结束行动渲染
 	if (this->m_nowPlayerIndex == this->m_endPlayerIndex || this->m_calledPlayersIndex.size() <= 1) {		//本轮结束
 		this->updatePots();										//更新底池与边池
 		this->finishThisRound();								//本轮结束相关渲染
@@ -251,6 +307,10 @@ void game::afterPlayerAction(){									//玩家行动后
 }
 
 void game::calCardTypeAndPointForAll() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::calCardTypeAndPointForAll is called!\" 计算所有玩家牌型");
+#endif // DEBUG_MESSAGE	
+
 	for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
 		int playerIndex = *playerIndexIterator;
 		calCardTypeAndPointForPlayer(playerIndex);
@@ -280,6 +340,10 @@ cardTypeAndPoint game::calCardTypeAndPointForPlayer(const int playerIndex) {
 
 
 void game::nextRound() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nextRound is called!\" 进入下回合");
+#endif // DEBUG_MESSAGE
+
 	if (this->m_calledPlayersIndex.size()<=1||this->m_round >= gameRound::River) {	//没人了或是最后一轮进行完了，结算
 		this->settle();
 		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
@@ -340,6 +404,10 @@ void game::nextRound() {
 //}
 
 void game::renderGame() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::renderGame is called!\" 渲染游戏界面");
+#endif // DEBUG_MESSAGE
+
 	//首先渲染桌子
 	{
 		vector<card> const& commonCards = this->getCommonCards();	//公共牌
@@ -418,6 +486,10 @@ void game::hideAllBegin()
 
 void game::showGameEnd()
 {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::showGameEnd is called!\" 游戏结束，开始结算");
+#endif // DEBUG_MESSAGE
+
 	//游戏结束
 	//玩家赢得结算
 	for (int i_player : this->m_calledPlayersIndex) {
@@ -459,6 +531,10 @@ void game::showGameEnd()
 }
 
 void game::updatePlayerScore(const int playerIndex) {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::updatePlayerScore is called!\" 更新玩家 = " + std::to_string(playerIndex) +" 计分表");
+#endif // DEBUG_MESSAGE
+
 	const string macAddress = this->getPlayerMacAddress(playerIndex);
 	auto iter = this->m_macAddressToScoreChartIndex.find(macAddress);
 	if (iter == this->m_macAddressToScoreChartIndex.end()) {		//没找到
@@ -481,6 +557,10 @@ void game::updatePlayerScore(const int playerIndex) {
 //与上面一样，只有桌上筹码修改不一样。。。
 //其实可以写在一起，加标志判断区别操作，但是担心后面出现escape的bug，需要大修改，所以先分开写了
 void game::updateEscapedPlayerScore(const int playerIndex) {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::updateEscapedPlayerScore is called!\" 更新逃跑玩家 = " + std::to_string(playerIndex) + "计分表");
+#endif // DEBUG_MESSAGE
+
 	const string macAddress = this->getPlayerMacAddress(playerIndex);
 	auto iter = this->m_macAddressToScoreChartIndex.find(macAddress);
 	if (iter == this->m_macAddressToScoreChartIndex.end()) {		//没找到
@@ -500,13 +580,21 @@ void game::updateEscapedPlayerScore(const int playerIndex) {
 	this->m_scoreChart->setItem(playerRow, 3, new QStandardItem(QString::number(0)));	//桌上筹码改为0
 	this->m_scoreChart->setItem(playerRow, 4, new QStandardItem(QString::number(totalWin)));
 }
-void game::nowPlayerActionComplete() {
+void game::nowPlayerActionComplete() {		//渲染用
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerActionComplete is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + " 行动结束，渲染");
+#endif // DEBUG_MESSAGE
+
 	this->hideNowPlayerAllAction();		//隐藏当前玩家行动界面
 	this->showNowPlayerChip();			//显示当前玩家筹码信息
 	this->showNowPlayerActionMessage();	//当前玩家行动信息
 }
 
 void game::finishThisRound() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::finishThisRound is called!\" 当前回合结束");
+#endif // DEBUG_MESSAGE
+
 	this->showPot();	//展示底池
 	for (int i_player = 0; i_player < game::maxNumOfPlayers; ++i_player) {
 		player& curPlayer = this->getPlayer(i_player);
@@ -520,6 +608,10 @@ void game::finishThisRound() {
 }
 
 bool game::nowPlayerRender() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::nowPlayerRender is called!\" 渲染当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + "行动界面");
+#endif // DEBUG_MESSAGE
+
 	const int nowPlayerIndex = this->getNowPlayerIndex();
 	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
 	//this->hidePlayerActionMessage(nowPlayerIndex);		//应该单独拿出去作为一个函数
@@ -547,6 +639,9 @@ bool game::nowPlayerRender() {
 
 
 bool game::begin() {
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::begin is called!\" 游戏开始");
+#endif // DEBUG_MESSAGE
 	//移出到调用begin的位置，更合逻辑
 	//先计算是不是所有玩家都准备了
 	/*const int numOfPlayer = this->getNumOfPlayers();
@@ -612,18 +707,21 @@ bool game::begin() {
 //}
 void game::playerWin(int winnerIndex){	//可以用作渲染赢了的场景
 	//在这
-
 	player& winnerPlayer = this->getPlayer(winnerIndex);
 	winnerPlayer.win();
 }
 
-void game::playerLose(int loserIndex){	//可以用作渲染赢了的场景
+void game::playerLose(int loserIndex){	//可以用作渲染输了的场景
 	//在这
 	player& losePlayer = this->getPlayer(loserIndex);
 	losePlayer.lose();
 }
 
 vector<int> game::getMaxPlayersIndex(){
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::getMaxPlayersIndex is called!\" 根据固有m_calledPlayersIndex，获取玩家牌型排序，这个函数似乎没用到");
+#endif // DEBUG_MESSAGE
+
 	vector<int> res;
 	for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
 		int playerIndex = *playerIndexIterator;
@@ -648,6 +746,10 @@ vector<int> game::getMaxPlayersIndex(){
 }
 
 vector<int> game::getMaxPlayersIndex(vector<int> const & curPlayerIndexSet){
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::getMaxPlayersIndex is called!\" 根据curPlayerIndexSet输入，获取玩家牌型排序");
+#endif // DEBUG_MESSAGE
+
 	vector<int> res;
 	for (int playerIndex: curPlayerIndexSet) {
 		if (res.empty())
@@ -671,6 +773,11 @@ vector<int> game::getMaxPlayersIndex(vector<int> const & curPlayerIndexSet){
 }
 
 void game::settle(){		//结算
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::settle is called!\" 开始结算");
+	m_debugMessage->flush();
+#endif // DEBUG_MESSAGE
+
 	if (this->m_calledPlayersIndex.size() > 1)
 		this->calCardTypeAndPointForAll();
 	//底池结算，已allin的不计算，等边池
@@ -728,6 +835,10 @@ void game::settle(){		//结算
 }
 
 void game::updatePots(){	//更新底池与边池
+#ifdef DEBUG_MESSAGE
+	m_debugMessage->debug("\"game::updatePots is called!\" 更新底池与边池");
+#endif // DEBUG_MESSAGE
+
 	//先按照当前轮下注排序，从小到大
 	vector<int> playerNowBetSortedIndexes;
 	//for (auto playerIndexIterator = this->m_calledPlayersIndex.begin(); playerIndexIterator != this->m_calledPlayersIndex.end(); ++playerIndexIterator) {
@@ -765,7 +876,7 @@ void game::updatePots(){	//更新底池与边池
 	}
 	this->setMinBet(0);	//最小bet为0
 }
-
+//show 和 hide 的debug输出，写在 emptyUI的函数里更合理
 void game::showPlayerChip(const int playerIndex)
 {
 	const int chip = this->getPlayer(playerIndex).getChip();
@@ -821,7 +932,9 @@ void game::showPlayerActionMessage(const int playerIndex)
 
 void game::showPlayerSidePot(const int playerIndex, const int money)
 {
-	this->m_ui->showPlayerSidePot(playerIndex, money);
+	if (money > 0) {
+		this->m_ui->showPlayerSidePot(playerIndex, money);
+	}
 }
 
 void game::showPlayerMessage(const int playerIndex, string const & message)

@@ -579,7 +579,7 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 		const int index = bytes4ToInt(dataArray);
 		this->setClientPlayerIndex(index);
 	}
-	else if (receivedCommand == tcpCommandToClient::sendScoreChartData) {
+	else if (receivedCommand == tcpCommandToClient::sendScoreChartData) {	//这个想抽出来，但是涉及到字节问题。。。犹豫
 		const int row = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
 		dataArray.remove(0, commandAndDataToClient::byteOfInt);
 		const int col = bytes4ToInt(dataArray.left(commandAndDataToClient::byteOfInt));
@@ -634,6 +634,10 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 	else if (receivedCommand == tcpCommandToClient::setGameMode) {
 		const string modeText = dataArray.toStdString();
 		this->setWindowTitle(QStringLiteral("德州扑克——") + QString::fromLocal8Bit(modeText.data()));
+	}
+	else if (receivedCommand == tcpCommandToClient::sameMacAddress) {
+		QMessageBox::about(this, QStringLiteral("连接失败"), QStringLiteral("不允许相同的mac地址！"));
+		QApplication::exit();
 	}
 }
 
@@ -834,7 +838,7 @@ void TexasPokerClientUI::showPlayerDealer(const int playerIndex) const
 	this->dealer->show();
 
 #ifdef PRINT_RECORD
-	m_recorder->info("游戏开始！");
+	m_recorder->info("-------------------游戏开始！-------------------");
 	m_recorder->info("参与玩家为：");
 	for (int i = 0; i < game::maxNumOfPlayers; i++) {
 		auto const& p = this->players[i];

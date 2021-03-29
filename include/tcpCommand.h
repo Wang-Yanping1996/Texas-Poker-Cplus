@@ -49,7 +49,8 @@ enum tcpCommandToClient {
 	showDealer = 0x40000000,
 	showClientChatMessage = 0x80000000,
 
-	setGameMode = 0x10000001
+	setGameMode = 0x10000001,
+	sameMacAddress = 0x10000002
 };
 
 enum tcpCommandToServer {
