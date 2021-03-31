@@ -70,6 +70,20 @@ emptyServerUI::emptyServerUI(QWidget *parent, game* g)
 	m_gameModeDisplay = new QLabel(this->centralWidget);		//模式显示
 	m_gameModeDisplay->setGeometry(QRect(500, 270, 200, 30));
 	m_gameModeDisplay->hide();
+	
+	//每次思考时间输入
+	m_timePerActionInput = new QLineEdit(this);
+	m_timePerActionInput->setGeometry(QRect(270, 310, 180, 30));
+	//m_timePerActionInput->setValidator(new QRegExpValidator(QRegExp("^$|[5-9]|[1-9][0-9]{1}"), this));	//输入范围只在5~90s
+	m_timePerActionInput->show();
+
+	m_timePerActionShow = new QLabel(this);
+	m_timePerActionShow->setGeometry(QRect(270, 243, 210, 30));			//显示思考时间
+	m_timePerActionShow->setText(QStringLiteral("思考时间(5~99s，空输入=不限时)："));
+	m_timePerActionShow->show();
+
+	m_timePerAction = infiniteTime;		//默认-1
+
 	//tcp连接相关初始化
 	m_arrayClient = vector<QTcpSocket*>(game::maxNumOfPlayers, nullptr);
 
@@ -479,6 +493,19 @@ void emptyServerUI::showPlayer1HandCardOnPlayer2(const int player1Index, const i
 	this->sendCommandAndDataToPlayer(player2Index, toSend);
 }
 
+void emptyServerUI::showPlayerActionMessageWithTime(const int playerIndex)const {
+	commandAndDataToClient toSend(tcpCommandToClient::startTimer, playerIndex, m_timePerAction);
+	this->sendCommandAndDataToAll(toSend);
+}
+
+void emptyServerUI::stopAllClientTimer() const
+{
+	if (this->m_timePerAction != infiniteTime) {		//无限时间不用操作
+		commandAndDataToClient toSend(tcpCommandToClient::stopTimer);
+		this->sendCommandAndDataToAll(toSend);
+	}
+}
+
 //analyze部分抽出的函数
 void emptyServerUI::setPlayerUniqueName(const int playerIndex, const string& playerName) {
 	string noRepeatName = playerName;						//不重复的名字
@@ -584,6 +611,14 @@ void emptyServerUI::newConnectionSlot() {
 
 	//告知客户端 游戏模式
 	std::string modeText(this->m_gameModeDisplay->text().toLocal8Bit());
+	modeText += "，思考时间：";
+	if (this->m_timePerAction == infiniteTime) {
+		modeText += "无限";
+	}
+	else {
+		modeText += std::to_string(this->m_timePerAction);
+	}
+	
 	commandAndDataToClient toSend(tcpCommandToClient::setGameMode, modeText);
 	this->sendCommandAndDataToPlayer(addPlayerIndex, toSend);
 	
@@ -716,6 +751,22 @@ void emptyServerUI::disconnectionSlot() {	//有客户端断开连接
 
 void emptyServerUI::setPort()
 {
+	if (m_timePerActionInput->text().size() > 0) {
+		int timeInput = m_timePerActionInput->text().toInt();
+		if (timeInput < 5 || timeInput > 99) {
+			QMessageBox::about(this, QStringLiteral("错误"), QStringLiteral("输入应在5~99之间"));
+			return;
+		}
+		m_timePerAction = timeInput;
+		m_timePerActionShow->setText(QStringLiteral("思考时间：") + QString::number(m_timePerAction));
+	}
+	else {
+		m_timePerAction = infiniteTime;
+		m_timePerActionShow->setText(QStringLiteral("思考时间：不限"));
+	}
+	m_timePerActionInput->hide();
+
+
 	int aaa = m_port->text().toInt();
 	qint32 port = m_port->text().toInt();
 	m_tcpServer->listen(QHostAddress::Any, port);	//设置监听端口

@@ -65,7 +65,7 @@ playerClient::playerClient(QWidget *centralWidget, int x, int y, int playerIndex
 
 	actionMessage = new QLabel(centralWidget);
 	actionMessage->setObjectName(QStringLiteral("actionMessage"));
-	actionMessage->setGeometry(QRect(40 + x, 26 + y, 121, 40));
+	actionMessage->setGeometry(QRect(40 + x, 26 + y, 160, 40));
 	actionMessage->setFont(font1);
 	actionMessage->setLayoutDirection(Qt::LeftToRight);
 	actionMessage->setAlignment(Qt::AlignCenter);
@@ -364,6 +364,15 @@ TexasPokerClientUI::TexasPokerClientUI(QWidget *parent)
 		QMessageBox::about(this, QStringLiteral("错误"), QStringLiteral("获取本机地址失败"));
 		QApplication::exit();
 	}
+	//定时器设置
+	m_clock = new QTimer(this);
+	m_clock->stop();			//默认是停止
+	m_resTime = INT_MAX;
+	m_nowActionPlayer = -1;		//默认当前玩家无效
+	m_clientResTimeShow = new QLabel(this);
+	m_clientResTimeShow->setGeometry(QRect(470, 440, 150, 23));
+	m_clientResTimeShow->hide();
+	connect(this->m_clock, SIGNAL(timeout()), this, SLOT(timerEventSlot()));
 
 	connect(m_connect, SIGNAL(clicked()), this, SLOT(connectTcp()));
 	connect(m_tcpClient, SIGNAL(disconnected()), this, SLOT(disconnectTcp()));	//从tcp连接成功处移到这里
@@ -435,6 +444,27 @@ bool TexasPokerClientUI::getMacByGetAdaptersInfo(){
 
 	free(pAdapterInfo);
 	return ret;
+}
+
+void TexasPokerClientUI::startTimer(const int playerIndex, const int sec)
+{
+	this->m_nowActionPlayer = playerIndex;
+	this->m_resTime = sec;
+	if (this->m_resTime != infiniteTime) {		//不为-1才是有效设定，否则按无限时长处理
+		this->timerEventSlot();					//先显示一下，似乎比设定长一秒？
+		this->m_clock->start(1000);
+	}
+	else {										//否则就不带时间显示，本机如果是NowPlayer的话，Message会在showFold时隐藏，所以不必额外判断。
+		this->showPlayerActionMessage(playerIndex, "玩家行动中...");
+	}
+}
+
+//timer计时相关
+void TexasPokerClientUI::stopTimer()
+{
+	this->m_clock->stop();
+	this->m_resTime = INT_MAX;
+	this->m_clientResTimeShow->hide();
 }
 
 //分支应该写成==判断
@@ -638,6 +668,17 @@ void TexasPokerClientUI::analyzeCommand(QByteArray received)
 	else if (receivedCommand == tcpCommandToClient::sameMacAddress) {
 		QMessageBox::about(this, QStringLiteral("连接失败"), QStringLiteral("不允许相同的mac地址！"));
 		QApplication::exit();
+	}
+	else if (receivedCommand == tcpCommandToClient::startTimer) {
+		QByteArray playerIndexArray = dataArray.left(commandAndDataToClient::byteOfInt);
+		const int playerIndex = bytes4ToInt(playerIndexArray);
+		dataArray.remove(0, commandAndDataToClient::byteOfInt);
+		const int sec = bytes4ToInt(dataArray);
+
+		this->startTimer(playerIndex, sec);
+	}
+	else if (receivedCommand == tcpCommandToClient::stopTimer) {
+		this->stopTimer();
 	}
 }
 
@@ -1159,3 +1200,24 @@ void TexasPokerClientUI::chatSendMessageSlot() {
 	return;
 }
 
+void TexasPokerClientUI::timerEventSlot() {
+	//每秒一次
+	m_resTime--;
+	if (this->m_nowActionPlayer == this->m_clientPlayerIndex) {
+		m_clientResTimeShow->setText(QStringLiteral("剩余思考时间：") + QString::number(m_resTime) + QStringLiteral("秒"));
+		m_clientResTimeShow->show();
+		if (m_resTime <= 0) {								//到时间了
+			const bool canCheck = this->check->isVisible();	//先看能不能check，要不然被下面hideClientPlayerAllAction隐藏了
+			this->hideClientPlayerAllAction();				//先隐藏，以免重复按------------感觉如果卡在中间按也会出问题，要不要加锁？
+			if (canCheck) {									//如果能check就check，不能就fold
+				this->nowPlayerCheck();
+			}
+			else {
+				this->nowPlayerFold();
+			}
+		}
+	}
+	else {
+		this->showPlayerActionMessage(this->m_nowActionPlayer, "玩家行动中... 剩余" + std::to_string(m_resTime) + std::string("秒"));
+	}
+}

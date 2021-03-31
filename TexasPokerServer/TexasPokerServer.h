@@ -15,6 +15,7 @@
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qradiobutton.h>
 #include <QtWidgets/qbuttongroup.h>
+#include <qvalidator.h>
 
 #include "tcpCommand.h"
 #include "tcpPackageAnalyzer.h"
@@ -73,6 +74,10 @@ public:
 	//后添加的show牌方法，在玩家2的client上show玩家1的牌
 	virtual void showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const& handCards)const;
 
+	//后添加的，带时间的行动信息显示
+	virtual void showPlayerActionMessageWithTime(const int playerIndex)const;
+	virtual void stopAllClientTimer()const;
+
 	//analyze部分抽出的函数
 	void setPlayerUniqueName(const int playerIndex, const string& playerName);
 	void setPlayerUniqueMacAddress(const int playerIndex, const string& macAddress);
@@ -97,6 +102,10 @@ private:
 	QRadioButton *nomalMode;
 	QRadioButton *shortDeckMode;
 	QLabel *m_gameModeDisplay;
+
+	int m_timePerAction;					//思考时间sec，默认-1
+	QLineEdit *m_timePerActionInput;		//输入每次思考时间
+	QLabel *m_timePerActionShow;			//显示每次思考时间
 	//原来就有的
 	QMenuBar *menuBar;
 	QToolBar *mainToolBar;

@@ -584,6 +584,7 @@ void game::nowPlayerActionComplete() {		//渲染用
 #ifdef DEBUG_MESSAGE
 	m_debugMessage->debug("\"game::nowPlayerActionComplete is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + " 行动结束，渲染");
 #endif // DEBUG_MESSAGE
+	this->m_ui->stopAllClientTimer();	//已行动，停止当前所有client的计时
 
 	this->hideNowPlayerAllAction();		//隐藏当前玩家行动界面
 	this->showNowPlayerChip();			//显示当前玩家筹码信息
@@ -615,7 +616,10 @@ bool game::nowPlayerRender() {
 	const int nowPlayerIndex = this->getNowPlayerIndex();
 	player const& nowPlayer = this->getPlayer(nowPlayerIndex);
 	//this->hidePlayerActionMessage(nowPlayerIndex);		//应该单独拿出去作为一个函数
-	this->showPlayerMessage(nowPlayerIndex, "玩家行动中...");	//显示当前行动玩家
+
+	//这里似乎应该隐藏nowPlayerIndex client上 nowPlayerIndex的信息，但是以前是直接在client的showFold里将client自身的message隐藏掉了。。。
+	//this->showPlayerMessage(nowPlayerIndex, "玩家行动中...");	//显示当前行动玩家
+	this->m_ui->showPlayerActionMessageWithTime(nowPlayerIndex);		//带时间的显示
 
 	if (nowPlayer.hasAllin()) {
 		this->afterPlayerAction();

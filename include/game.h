@@ -13,6 +13,9 @@
 #include <unordered_map>
 #include <QtGui/qstandarditemmodel.h>
 
+//计时时，无限的思考时间
+const int infiniteTime = -1;
+
 enum gameRound { ErrorRound = -1, Ready, Start, PreFlop, Flop, Turn, River, End };
 
 //接口类,包含了UI应该实现的方法，也就是各部件的show和hide
@@ -65,6 +68,10 @@ public:
 	//后添加的show牌方法，在玩家2的client上show玩家1的牌
 	virtual void showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const& handCards)const = 0;
 	virtual void showPlayer1CardBackOnPlayer2(const int player1Index, const int player2Index)const;
+
+	//后添加的，带时间的行动信息显示
+	virtual void showPlayerActionMessageWithTime(const int playerIndex)const = 0;
+	virtual void stopAllClientTimer()const = 0;
 };
 
 //边池类

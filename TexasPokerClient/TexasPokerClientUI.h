@@ -23,7 +23,8 @@
 #include <QtWidgets/qheaderview.h>
 #include <QtWidgets/qlistwidget.h>
 #include <QtWidgets/qcombobox.h>
-#include <qevent.h>
+#include <qtimer.h>
+//#include <qevent.h>
 
 #include "game.h"
 #include "tcpCommand.h"
@@ -154,6 +155,12 @@ private:
 	int m_clientPlayerIndex;
 	
 	string macAddress;			//本机第一个mac地址
+
+	QTimer *m_clock;			//定时器，用于监测玩家行动时长
+	int m_resTime;				//剩余时间
+	QLabel *m_clientResTimeShow;//当前client的剩余时间显示，其它client的显示混在actionMessage里
+	int m_nowActionPlayer;
+
 #ifdef PRINT_RECORD
 	std::shared_ptr<spdlog::logger> m_recorder;
 #endif // PRINT_RECORD
@@ -162,6 +169,9 @@ public:
 	//获取第一个以太网卡mac地址
 	bool getMacByGetAdaptersInfo();
 
+	//timer计时相关
+	void startTimer(const int playerIndex, const int sec);
+	void stopTimer();
 	//tcp命令解析
 	void analyzeCommand(QByteArray received);
 	void sendCommandAndDataToServer(commandAndDataToServer toSend)const;
@@ -220,4 +230,6 @@ public slots:
 	void showScoreChartSlot();
 	//聊天信息
 	void chatSendMessageSlot();
+	//定时器计时
+	void timerEventSlot();
 };
