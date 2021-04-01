@@ -486,7 +486,7 @@ void emptyServerUI::hidePlayerFoldAction(const int nowPlayerIndex) const
 void emptyServerUI::showPlayer1HandCardOnPlayer2(const int player1Index, const int player2Index, vector<card> const & handCards)const
 {
 #ifdef DEBUG_MESSAGE
-	m_game->m_debugMessage->debug("\"game::showPlayer1CardsOnPlayer2 is called!\" 在玩家 = " + std::to_string(player2Index) + " 界面展示玩家 = " + std::to_string(player1Index) + " 的牌");
+	m_game->m_debugMessage->debug("\"emptyServerUI::showPlayer1CardsOnPlayer2 is called!\" 在玩家 = " + std::to_string(player2Index) + " 界面展示玩家 = " + std::to_string(player1Index) + " 的牌");
 #endif // DEBUG_MESSAGE
 
 	commandAndDataToClient toSend(tcpCommandToClient::showPlayerHandCardsCommand, player1Index, handCards);
@@ -494,12 +494,20 @@ void emptyServerUI::showPlayer1HandCardOnPlayer2(const int player1Index, const i
 }
 
 void emptyServerUI::showPlayerActionMessageWithTime(const int playerIndex)const {
+#ifdef DEBUG_MESSAGE
+	m_game->m_debugMessage->debug("\"emptyServerUI::showPlayerActionMessageWithTime is called!\" 展示玩家 = " + std::to_string(playerIndex) + " 带倒计时 = " + std::to_string(this->m_timePerAction) + " 的行动信息");
+#endif // DEBUG_MESSAGE
+
 	commandAndDataToClient toSend(tcpCommandToClient::startTimer, playerIndex, m_timePerAction);
 	this->sendCommandAndDataToAll(toSend);
 }
 
 void emptyServerUI::stopAllClientTimer() const
 {
+#ifdef DEBUG_MESSAGE
+	m_game->m_debugMessage->debug("\"emptyServerUI::showPlayer1CardsOnPlayer2 is called!\" 停止所有client计时");
+#endif // DEBUG_MESSAGE
+
 	if (this->m_timePerAction != infiniteTime) {		//无限时间不用操作
 		commandAndDataToClient toSend(tcpCommandToClient::stopTimer);
 		this->sendCommandAndDataToAll(toSend);
@@ -616,7 +624,7 @@ void emptyServerUI::newConnectionSlot() {
 		modeText += "无限";
 	}
 	else {
-		modeText += std::to_string(this->m_timePerAction);
+		modeText += std::to_string(this->m_timePerAction) + "秒";
 	}
 	
 	commandAndDataToClient toSend(tcpCommandToClient::setGameMode, modeText);

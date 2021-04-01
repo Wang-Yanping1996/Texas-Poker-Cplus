@@ -850,11 +850,28 @@ void TexasPokerClientUI::showPlayerActionMessage(const int playerIndex, string c
 		m_recorder->info(msg);
 	}
 	else if (shownMessage.left(QStringLiteral("玩家赢得").length()) == QStringLiteral("玩家赢得")) {
+		//无牌型时获胜，先检查是不是没人了
+		{
+			if (playerIndex == this->m_clientPlayerIndex) {				//赢者非本机玩家，一定不是因为没人获胜，因为当前client在游戏中。 如果本机玩家赢了，则可能是因为其余人弃牌。
+				bool isNoOne = true;
+
+				for (int i_player = 1; i_player < game::maxNumOfPlayers; i_player++) {		//除client以外，是否有人在场。 需要从1开始，因为0是client本人。
+					auto p = this->players[i_player];
+					if (p->playerName->isVisible() && p->playerChip->isVisible()) {
+						isNoOne = false;
+						break;
+					}
+				}
+				if (isNoOne) {
+					this->m_recorder->info("玩家逃跑，游戏中只剩 1 人，剩余玩家编号 = " + std::to_string(this->m_clientPlayerIndex));
+				}
+			}
+		}
 		shownMessage = shownMessage.remove(0, QStringLiteral("玩家赢得：").length());
-		m_recorder->info("玩家赢得 = " + string(shownMessage.toLocal8Bit()));
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + "，赢得 = " + string(shownMessage.toLocal8Bit()));
 	}
 	else if (shownMessage.left(QStringLiteral("玩家输了").length()) == QStringLiteral("玩家输了")) {
-		m_recorder->info("玩家输了");
+		m_recorder->info("玩家编号 = " + std::to_string(playerIndex) + " 输了");
 	}
 	else {}
 	m_recorder->flush();

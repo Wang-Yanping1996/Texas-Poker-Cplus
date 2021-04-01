@@ -256,38 +256,65 @@ void game::playerEscape(const int playerIndex)	//仿照fold处理
 #endif // DEBUG_MESSAGE	
 
 	this->hidePlayer(playerIndex);										//直接隐藏
-	
-	player& escapedPlayer = this->getPlayer(playerIndex);
-	if (this->m_hasStarted) {											//括号里内容的似乎只在游戏进行时需要执行？
-		if (this->getEndPlayerIndex() == playerIndex) {
-			const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);
-			this->setEndPlayerIndex(newEndPlayerIndex);
-		}
-		if (this->getNowPlayerIndex() == playerIndex) {					//逃跑玩家如果是正在行动玩家，则需要渲染下一位玩家
-			this->m_nowPlayerIndex = this->getNextCalledPlayerIndex(this->m_nowPlayerIndex);	//下一位玩家
-			this->nowPlayerRender();															//渲染下一位玩家的界面
-		}
-		this->addToPot(escapedPlayer.getNowBet());						//已下注加入底池		
-		this->updateEscapedPlayerScore(playerIndex);					//更新逃跑玩家的计分表
+	this->updateEscapedPlayerScore(playerIndex);						//更新逃跑玩家的计分表
 
-		this->m_calledPlayersIndex.erase(playerIndex);					//从已call集合中删除
-	}
-
-	escapedPlayer = player();											//建立一个空player代替
-
-	if (this->m_hasStarted && this->m_calledPlayersIndex.size() <= 1) {	//游戏进行中 且 没人了，结算
-		this->updatePots();												//更新底池与边池
-		this->settle();
-
-		//如果，当前玩家是剩下的唯一玩家，那么隐藏其行动界面。第一个判断条件为了逻辑清晰。
-		if (this->m_calledPlayersIndex.size() <= 1 && this->getNowPlayerIndex() == *(this->m_calledPlayersIndex.begin())) {
-			this->hideNowPlayerAllAction();									
-		}
-		//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
-		this->showGameEnd();
-		this->setGameHasStarted(false);									//游戏结束，游戏状态设置为未开始
+	if (!this->m_hasStarted) {											//如果游戏没开始，简单处理
+		player& escapedPlayer = this->getPlayer(playerIndex);
+		escapedPlayer = player();
 		return;
 	}
+	else if (this->m_hasStarted) {
+		//这里是游戏开始
+		player& escapedPlayer = this->getPlayer(playerIndex);
+		this->addToPot(escapedPlayer.getNowBet());						//更新底池
+		escapedPlayer.setNowBet(0);
+		this->m_calledPlayersIndex.erase(playerIndex);					//从已call集合中删除
+		escapedPlayer = player();
+
+		if ((int)this->m_calledPlayersIndex.size() <= 1) {				//玩家弃牌后没有人了
+			//此时是，只剩一个人。说明弃牌前有两个。 此时已经进入结算，将当前玩家的行为界面隐藏。
+			this->m_ui->stopAllClientTimer();							//结算，停止计时
+			this->hideNowPlayerAllAction();
+
+			//结算
+			this->updatePots();	//按每轮结束，更新底池与边池
+								//这后三个函数 = nextRound里的gameEnd状态
+			this->settle();
+			//然后渲染结束本局画面，包括每位玩家的再次开始键和show牌、牌型，再次开始绑定至下一局游戏
+			this->showGameEnd();
+			this->setGameHasStarted(false);									//游戏结束，游戏状态设置为未开始
+			return;
+		}
+		else {	//剩余玩家>2人
+
+			if (playerIndex == this->getNowPlayerIndex()) {
+				this->afterPlayerAction();
+			}
+			else if (playerIndex != this->getNowPlayerIndex() && this->getEndPlayerIndex() == playerIndex ) {
+				const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);	//修改当前回合的终止玩家
+				this->setEndPlayerIndex(newEndPlayerIndex);
+			}
+			else {}
+			//这段逻辑和上面一样的
+			//if (this->getEndPlayerIndex() == playerIndex && playerIndex == this->getNowPlayerIndex()) {			//逃跑玩家 = 结束玩家，逃跑玩家 = 当前玩家。 
+			//								//不需更新终止玩家，因为nextRound自动更新
+			//	this->afterPlayerAction();									//当前玩家已fold，游戏未结束，继续。此时after中判断与 (int)this->m_calledPlayersIndex.size() <= 1 重复
+			//}
+			//else if (this->getEndPlayerIndex() == playerIndex && playerIndex != this->getNowPlayerIndex()) {	//逃跑玩家 = 结束玩家，逃跑玩家 != 当前玩家。
+			//	const int newEndPlayerIndex = this->getPreCalledPlayerIndex(playerIndex);	//修改当前回合的终止玩家
+			//	this->setEndPlayerIndex(newEndPlayerIndex);
+			//}
+			//else if (this->getEndPlayerIndex() != playerIndex && playerIndex == this->getNowPlayerIndex()) {	//逃跑玩家 != 结束玩家，逃跑玩家 = 当前玩家。
+			//	this->afterPlayerAction();									//当前玩家已fold，游戏未结束，继续。此时after中判断与 (int)this->m_calledPlayersIndex.size() <= 1 重复
+			//}
+			//else if (this->getEndPlayerIndex() != playerIndex && playerIndex != this->getNowPlayerIndex()) {	//逃跑玩家 != 结束玩家，逃跑玩家 != 当前玩家。 好像无需操作？
+			//}
+			//else {}
+			return;
+		}
+	}
+	else {}
+	return;
 }
 void game::afterPlayerAction(){									//玩家行动后
 #ifdef DEBUG_MESSAGE
@@ -580,6 +607,7 @@ void game::updateEscapedPlayerScore(const int playerIndex) {
 	this->m_scoreChart->setItem(playerRow, 3, new QStandardItem(QString::number(0)));	//桌上筹码改为0
 	this->m_scoreChart->setItem(playerRow, 4, new QStandardItem(QString::number(totalWin)));
 }
+
 void game::nowPlayerActionComplete() {		//渲染用
 #ifdef DEBUG_MESSAGE
 	m_debugMessage->debug("\"game::nowPlayerActionComplete is called!\" 当前玩家 = " + std::to_string(this->m_nowPlayerIndex) + " 行动结束，渲染");
@@ -587,8 +615,10 @@ void game::nowPlayerActionComplete() {		//渲染用
 	this->m_ui->stopAllClientTimer();	//已行动，停止当前所有client的计时
 
 	this->hideNowPlayerAllAction();		//隐藏当前玩家行动界面
-	this->showNowPlayerChip();			//显示当前玩家筹码信息
-	this->showNowPlayerActionMessage();	//当前玩家行动信息
+	if (this->getNowPlayer().getPlayerType() != playerType::Empty) {	//空玩家不操作
+		this->showNowPlayerChip();			//显示当前玩家筹码信息
+		this->showNowPlayerActionMessage();	//当前玩家行动信息
+	}
 }
 
 void game::finishThisRound() {
@@ -884,7 +914,9 @@ void game::updatePots(){	//更新底池与边池
 void game::showPlayerChip(const int playerIndex)
 {
 	const int chip = this->getPlayer(playerIndex).getChip();
-	this->m_ui->showPlayerChip(playerIndex, chip);
+	if (chip >= 0) {
+		this->m_ui->showPlayerChip(playerIndex, chip);
+	}
 }
 
 void game::showPlayerName(const int playerIndex) {
